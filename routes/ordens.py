@@ -1,0 +1,340 @@
+
+
+import sqlite3
+import pdfkit
+import os
+from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, send_from_directory, abort, current_app
+from datetime import datetime, timedelta
+from routes.saas_guard import checar_trial_e_pagamento
+
+ordens_bp = Blueprint('ordens', __name__)
+config_pdfkit = pdfkit.configuration(wkhtmltopdf=r'C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe')
+
+# Geração de PDF da ordem
+@ordens_bp.route('/pdf_ordem/<int:id>')
+def gerar_pdf(id):
+    if 'user' not in session:
+        return redirect(url_for('auth.login'))
+
+    conn = sqlite3.connect('ordens.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
+    ordem = cursor.fetchone()
+    conn.close()
+
+    if not ordem:
+        return "Ordem não encontrada.", 404
+
+    # Pega o nome da imagem (coluna 7 ou 8, dependendo do modelo)
+    foto_nome = None
+    if len(ordem) > 7 and ordem[7]:
+        # Caminho absoluto para a imagem
+        foto_nome = os.path.join(current_app.root_path, 'static', 'imagens', ordem[7])
+        # Para o PDFKit funcionar, precisa ser file://
+        foto_nome = 'file:///' + foto_nome.replace('\\', '/').replace(' ', '%20')
+    from datetime import datetime
+    html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now())
+    options = {'enable-local-file-access': None}
+    pdf = pdfkit.from_string(html, False, configuration=config_pdfkit, options=options)
+
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'inline; filename=ordem_{id}.pdf'
+    return response
+
+# Dashboard com gráficos e indicadores
+@ordens_bp.route('/dashboard')
+
+def dashboard():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+
+    conn = sqlite3.connect('ordens.db')
+    cursor = conn.cursor()
+
+    mes_atual = datetime.now().strftime('%Y-%m')
+    cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_atual,))
+    total_ordens_mes = cursor.fetchone()[0] or 0
+
+    cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_atual,))
+    total_acessorios_mes = cursor.fetchone()[0] or 0
+
+    faturamento_mensal = total_ordens_mes + total_acessorios_mes
+
+    historico_mensal = []
+    meses = []
+    valores = []
+    for i in range(5, -1, -1):
+        data_ref = datetime.now() - timedelta(days=30 * i)
+        mes_ref = data_ref.strftime('%Y-%m')
+        meses.append(mes_ref)
+        cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_ref,))
+        val_ordens = cursor.fetchone()[0] or 0
+        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
+        val_acess = cursor.fetchone()[0] or 0
+        valores.append(val_ordens + val_acess)
+        historico_mensal.append({'mes': mes_ref, 'valor': val_ordens + val_acess})
+
+
+    # Garantir todos os status possíveis
+    status_possiveis = ['Recebido', 'Em análise', 'Concluído', 'Entregue']
+    cursor.execute('SELECT status, COUNT(*) FROM ordens GROUP BY status')
+    status_data = dict(cursor.fetchall())
+    status_labels = status_possiveis
+    status_counts = [status_data.get(s, 0) for s in status_possiveis]
+
+    conn.close()
+
+    return render_template(
+        'dashboard.html',
+        faturamento_mensal=f"{faturamento_mensal:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        historico_mensal=historico_mensal,
+        meses=meses,
+        valores=valores,
+        status_labels=status_labels,
+        status_counts=status_counts
+    )
+
+# Cadastro de nova ordem
+@ordens_bp.route('/nova_ordem', methods=['GET', 'POST'])
+
+def nova_ordem():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+
+    erro = None
+
+
+    if request.method == 'POST':
+        cliente = request.form.get('cliente', '').strip()
+        telefone = request.form.get('telefone', '').strip()
+        aparelho = request.form.get('aparelho', '').strip()
+        defeito = request.form.get('defeito', '').strip()
+        valor = request.form.get('valor', '').strip()
+        status = request.form.get('status', 'Recebido')
+        data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        imagem_nome = None
+
+        # Upload da imagem
+        if 'foto_ordem' in request.files:
+            foto = request.files['foto_ordem']
+            if foto and foto.filename:
+                ext = os.path.splitext(foto.filename)[1]
+                imagem_nome = f"{aparelho}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
+                pasta_imagens = os.path.join(current_app.root_path, 'static', 'imagens')
+                if not os.path.exists(pasta_imagens):
+                    os.makedirs(pasta_imagens)
+                caminho = os.path.join(pasta_imagens, imagem_nome)
+                foto.save(caminho)
+
+        if not cliente or not telefone or not aparelho or not defeito or not valor:
+            erro = "Preencha todos os campos obrigatórios."
+        else:
+            try:
+                valor = float(valor.replace(",", "."))
+                conn = sqlite3.connect('ordens.db')
+                cursor = conn.cursor()
+                cursor.execute(
+                    'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                    (cliente, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao)
+                )
+                conn.commit()
+                conn.close()
+                return redirect(url_for('ordens.listar_ordens'))
+            except Exception as e:
+                erro = f"Erro ao salvar ordem: {e}"
+
+    return render_template('nova_ordem.html', erro=erro)
+
+# Listagem de ordens por mês
+@ordens_bp.route('/listar_ordens')
+
+def listar_ordens():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+
+    conn = sqlite3.connect('ordens.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM ordens ORDER BY data_criacao DESC')
+    todas_ordens = cursor.fetchall()
+    conn.close()
+
+    ordens_por_mes = {}
+    for ordem in todas_ordens:
+        if not ordem or ordem[3] is None:
+            continue
+        data = ordem[3][:7]  # Supondo data_criacao na coluna 3 (formato YYYY-MM-DD)
+        if data not in ordens_por_mes:
+            ordens_por_mes[data] = []
+        ordens_por_mes[data].append(ordem)
+
+    return render_template('ordens.html', ordens_por_mes=ordens_por_mes)
+
+# Faturamento anual
+@ordens_bp.route('/faturamento')
+
+def faturamento():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+
+    ano = datetime.now().strftime('%Y')
+    conn = sqlite3.connect('ordens.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y", data_criacao) = ?', (ano,))
+    total_ordens = cursor.fetchone()[0] or 0
+
+    cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y", data_venda) = ?', (ano,))
+    total_acessorios = cursor.fetchone()[0] or 0
+
+    # Histórico dos últimos 6 meses
+    historico_mensal = []
+    for i in range(5, -1, -1):
+        data_ref = datetime.now() - timedelta(days=30 * i)
+        mes_ref = data_ref.strftime('%Y-%m')
+        cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_ref,))
+        val_ordens = cursor.fetchone()[0] or 0
+        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
+        val_acess = cursor.fetchone()[0] or 0
+        historico_mensal.append((mes_ref, f"{(val_ordens + val_acess):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")))
+
+    conn.close()
+    faturamento_total = total_ordens + total_acessorios
+
+    return render_template('faturamento.html', faturamento=faturamento_total, historico_mensal=historico_mensal)
+
+# Acessórios - listagem
+@ordens_bp.route('/acessorios')
+
+def listar_acessorios():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+
+    conn = sqlite3.connect('ordens.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM acessorios ORDER BY data_venda DESC')
+    vendas = cursor.fetchall()
+    conn.close()
+
+    return render_template('acessorios.html', vendas=vendas)
+
+# Acessórios - salvar
+@ordens_bp.route('/salvar_acessorio', methods=['POST'])
+
+def salvar_acessorio():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+
+    nome = request.form.get('nome', '').strip()
+    quantidade = int(request.form.get('quantidade', 0))
+    preco_unitario = float(request.form.get('preco', 0))
+    receita_total = quantidade * preco_unitario
+    data_venda = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    if not nome or quantidade <= 0 or preco_unitario <= 0:
+        flash("Preencha todos os campos corretamente.")
+        return redirect(url_for('ordens.listar_acessorios'))
+
+    conn = sqlite3.connect('ordens.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO acessorios (nome, quantidade, preco_unitario, receita_total, data_venda)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (nome, quantidade, preco_unitario, receita_total, data_venda))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('ordens.listar_acessorios'))
+
+# Acessórios - remover
+@ordens_bp.route('/remover_acessorio/<int:id>', methods=['POST'])
+
+def remover_acessorio(id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+
+    conn = sqlite3.connect('ordens.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM acessorios WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for('ordens.listar_acessorios'))
+
+# Atualização de status da ordem
+@ordens_bp.route('/atualizar_status/<int:id>', methods=['POST'])
+def atualizar_status(id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+    novo_status = request.form.get('status', 'Pendente')
+    conn = sqlite3.connect('ordens.db')
+    cursor = conn.cursor()
+    cursor.execute('UPDATE ordens SET status=? WHERE id=?', (novo_status, id))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('ordens.listar_ordens'))
+
+import urllib.parse
+
+# Listagem de PDFs agrupados por mês
+
+# Download de PDF específico
+
+@ordens_bp.route('/download_ordens')
+def download_ordens():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+
+    mes = request.args.get('mes')
+    arquivo = request.args.get('arquivo')
+    if not mes or not arquivo:
+        abort(404)
+
+    pasta = os.path.join(current_app.root_path, 'static', 'pdfs')
+    arquivo_path = os.path.join(pasta, arquivo)
+    if not os.path.exists(arquivo_path):
+        abort(404)
+
+    # Forçar download
+    return send_from_directory(pasta, arquivo, as_attachment=True)
+
+@ordens_bp.route('/excluir_os/<int:id>', methods=['POST'])
+def excluir_os(id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+    conn = sqlite3.connect('ordens.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM ordens WHERE id=?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('ordens.listar_ordens'))

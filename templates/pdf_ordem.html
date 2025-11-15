@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ordem de Serviço</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            margin: 40px;
+            color: #000;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .campo {
+            border: 1px solid #000;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .foto {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+
+        .foto img {
+            max-width: 220px;
+            max-height: 180px;
+            width: auto;
+            height: auto;
+            border: 1px solid #000;
+            display: block;
+            margin: 0 auto;
+            page-break-inside: avoid;
+        }
+
+        .termo {
+            font-size: 10px;
+            white-space: pre-wrap;
+            border: 1px solid #000;
+            padding: 10px;
+            margin-top: 30px;
+        }
+
+
+        .assinatura {
+            margin-top: 40px;
+            width: 100%;
+            display: table;
+            table-layout: fixed;
+        }
+
+        .assinatura .assin-col {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+            vertical-align: bottom;
+            padding: 0 10px;
+        }
+
+        .linha {
+            border-top: 1px solid #000;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Ordem de Serviço #{{ ordem[0] }}</h2>
+
+    <div class="campo">
+        <span class="label">Cliente:</span>
+        {{ ordem[1] }}
+    </div>
+
+    <div class="campo">
+        <span class="label">Telefone:</span>
+        {{ ordem[2] }}
+    </div>
+
+    <div class="campo">
+        <span class="label">Aparelho:</span>
+        {{ ordem[3] }}
+    </div>
+
+    <div class="campo">
+        <span class="label">Defeito:</span>
+        {{ ordem[4] }}
+    </div>
+
+    <div class="campo">
+        <span class="label">Valor (R$):</span>
+        {{ ordem[5] }}
+    </div>
+
+
+
+
+    <div class="campo">
+        <span class="label">Data:</span>
+        {{ now.strftime('%d/%m/%y') }}
+    </div>
+
+    {% if foto_nome %}
+    <div class="foto">
+        <span class="label">Foto do Aparelho:</span>
+        <img src="{{ foto_nome | safe }}" alt="Foto do aparelho">
+    </div>
+    {% endif %}
+
+    <div class="termo">
+        <strong>Termo de Garantia:</strong><br><br>
+        NÃO ESTÃO INCLUSOS NESTA GARANTIA ALGUNS ACESSÓRIOS E TODAS AS PARTES EXTERNAS DO CELULAR TAIS COMO:
+        Lentes, antenas, carcaças, capas, cases, teclas, teclados e botões laterais se houver, tampas, películas
+        protetoras, cabos de dados, fones de ouvido, cartão de memória, pendrive, suportes e partes que se desgastam com
+        o uso.
+        A GARANTIA É CANCELADA AUTOMATICAMENTE NOS SEGUINTES CASOS:
+        Em ocasião de quedas, esmagamentos, sobrecarga elétrica; exposição do aparelho a altas temperaturas, umidade ou
+        líquidos; exposição do aparelho a poeira, pó e/ou limalha de metais, ou ainda quando constatado mau uso do
+        aparelho, instalações, modificações ou atualizações no seu sistema operacional; abertura do equipamento ou
+        tentativa de conserto deste por terceiros que não sejam os técnicos desta Assistência, mesmo que para realização
+        de outros serviços; bem como a violação do selo/lacre de garantia colocado por esta Assistência.
+        E ainda:
+        LENTE TOUCHSCREEN QUE APRESENTEM MAU USO, TRINCADOS OU QUEBRADOS, RISCADOS, MANCHADOS, DESCOLADOS ou COM CABO
+        FLEX ROMPIDO.
+        Vale lembrar que:
+        1) A GARANTIA DE 90 (NOVENTA) dias está de acordo com o artigo 26 inciso II do código de defesa do consumidor.
+        2) Funcionamento, instalação e atualização de aplicativos, bem como o sistema operacional do aparelho NÃO FAZEM
+        parte desta garantia.
+        3) Limpeza e conservação do aparelho NÃO FAZEM parte desta garantia.
+        4) A não apresentação de documento (nota fiscal ou este termo) que comprove o serviço INVÁLIDA a garantia.
+        5) Qualquer mal funcionamento APÓS ATUALIZAÇÕES do sistema operacional ou aplicativos NÃO FAZEM PARTE DESSA
+        GARANTIA.
+        6) A GARANTIA é válida somente para o item ou serviço descrito na nota fiscal, ordem de serviço ou neste termo
+        de garantia, NÃO ABRANGENDO OUTRAS PARTES e respeitando as condições aqui descritas.
+    </div>
+
+
+    <div class="assinatura">
+        <div class="assin-col">
+            <div class="linha"></div>
+            <p>Assinatura do Cliente</p>
+        </div>
+        <div class="assin-col">
+            <div class="linha"></div>
+            <p>Assinatura da Assistência</p>
+        </div>
+    </div>
+
+</body>
+
+</html>

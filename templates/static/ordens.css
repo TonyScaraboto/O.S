@@ -1,0 +1,22 @@
+body {
+    background-color: #2c2f33;
+    color: #ffffff;
+}
+
+.table {
+    background-color: #3c4043;
+    color: #ffffff;
+}
+
+.table thead {
+    background-color: #23272a;
+}
+
+.btn-success {
+    background-color: #43b581;
+    border: none;
+}
+
+.btn-success:hover {
+    background-color: #3aa76d;
+}

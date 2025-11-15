@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova Ordem{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Cadastrar Nova Ordem</h2>
+
+{% if erro %}
+<div class="alert alert-danger">{{ erro }}</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label for="cliente" class="form-label">Cliente</label>
+        <input type="text" class="form-control" name="cliente" required>
+    </div>
+    <div class="mb-3">
+        <label for="telefone" class="form-label">Telefone</label>
+        <input type="text" class="form-control" name="telefone" required>
+    </div>
+    <div class="mb-3">
+        <label for="aparelho" class="form-label">Aparelho</label>
+        <input type="text" class="form-control" name="aparelho" required>
+    </div>
+    <div class="mb-3">
+        <label for="defeito" class="form-label">Defeito</label>
+        <textarea class="form-control" name="defeito" rows="3" required></textarea>
+    </div>
+    <div class="mb-3">
+        <label for="valor" class="form-label">Valor (R$)</label>
+        <input type="number" step="0.01" class="form-control" name="valor" required>
+    </div>
+    <div class="mb-3">
+        <label for="status" class="form-label">Status</label>
+        <select class="form-select" name="status" required>
+            <option value="Recebido">Recebido</option>
+            <option value="Em análise">Em análise</option>
+            <option value="Concluído">Concluído</option>
+            <option value="Entregue">Entregue</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="foto_ordem" class="form-label">Foto do Aparelho (opcional)</label>
+        <input type="file" class="form-control" name="foto_ordem" accept="image/*">
+    </div>
+    <button type="submit" class="btn btn-success">Salvar Ordem</button>
+</form>
+{% endblock %}

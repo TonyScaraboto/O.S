@@ -1,0 +1,30 @@
+body {
+    background-color: #2c2f33;
+    color: #ffffff;
+}
+
+.navbar {
+    background-color: #23272a;
+}
+
+.btn-primary {
+    background-color: #5865f2;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #4752c4;
+}
+
+.balanco-box {
+    background-color: #000;
+    color: #fff;
+    border-left: 5px solid #5865f2;
+    padding: 20px;
+    margin-bottom: 30px;
+    border-radius: 8px;
+}
+
+.h5 {
+    color: #ffffff;
+}

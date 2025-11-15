@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Status da Assinatura{% endblock %}
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <div class="card bg-dark text-white shadow">
+        <div class="card-header text-center">
+            <h4>Status da Assinatura</h4>
+        </div>
+        <div class="card-body text-center">
+            <h5>{{ nome_assistencia }}</h5>
+            <p>
+                {% if assinatura_ativa %}
+                <span class="badge bg-success">Assinatura Ativa</span>
+                {% else %}
+                <span class="badge bg-warning text-dark">Trial ou Inativa</span>
+                {% endif %}
+            </p>
+            <p>
+                {% if dias_restantes is not none and not assinatura_ativa %}
+                <strong>Dias restantes de trial:</strong> {{ dias_restantes }}<br>
+                {% endif %}
+            </p>
+            <hr>
+            <h6>Pagamento via Pix</h6>
+            <p>Chave Pix: <strong>{{ pix_pagamento }}</strong></p>
+            <p>Valor: <strong>R$ 45,00/mês</strong></p>
+            <p>Após o pagamento, envie o comprovante para <b>comicsultimate@gmail.com</b> para ativação.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

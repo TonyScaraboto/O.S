@@ -1,0 +1,17 @@
+body {
+    background-color: #2c2f33;
+    color: #ffffff;
+}
+
+.navbar {
+    background-color: #23272a;
+}
+
+.btn-primary {
+    background-color: #5865f2;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #4752c4;
+}

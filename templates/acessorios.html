@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Vendas de Acessórios{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Vendas de Acessórios</h2>
+
+<!-- Formulário de venda -->
+<div class="card p-4 mb-4">
+    <form action="{{ url_for('ordens.salvar_acessorio') }}" method="post" class="row g-3">
+        <div class="col-md-4">
+            <label for="nome" class="form-label">Nome do Acessório</label>
+            <input type="text" id="nome" name="nome" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+            <label for="quantidade" class="form-label">Quantidade</label>
+            <input type="number" id="quantidade" name="quantidade" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+            <label for="preco" class="form-label">Preço Unitário (R$)</label>
+            <input type="number" id="preco" name="preco" step="0.01" class="form-control" required>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-success">Registrar Venda</button>
+        </div>
+    </form>
+</div>
+
+<!-- Tabela de vendas -->
+<div class="card p-4">
+    <h5 class="mb-3">Histórico de Vendas</h5>
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Quantidade</th>
+                <th>Preço Unitário</th>
+                <th>Receita Total</th>
+                <th>Data</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in vendas %}
+            <tr>
+                <td>{{ item[1] }}</td>
+                <td>{{ item[2] }}</td>
+                <td>R$ {{ item[3] }}</td>
+                <td>R$ {{ item[4] }}</td>
+                <td>{{ item[5] }}</td>
+                <td>
+                    <form action="{{ url_for('ordens.remover_acessorio', id=item[0]) }}" method="post"
+                        style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger"
+                            onclick="return confirm('Deseja remover esta venda?')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ordem de Serviço #{{ ordem[0] }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        td,
+        th {
+            border: 1px solid #ccc;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #eee;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Ordem de Serviço #{{ ordem[0] }}</h2>
+    <table>
+        <tr>
+            <th>Cliente</th>
+            <td>{{ ordem[1] }}</td>
+        </tr>
+        <tr>
+            <th>Telefone</th>
+            <td>{{ ordem[2] }}</td>
+        </tr>
+        <tr>
+            <th>Aparelho</th>
+            <td>{{ ordem[3] }}</td>
+        </tr>
+        <tr>
+            <th>Defeito</th>
+            <td>{{ ordem[4] }}</td>
+        </tr>
+        <tr>
+            <th>Valor</th>
+            <td>R$ {{ ordem[5] }}</td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td>{{ ordem[6] }}</td>
+        </tr>
+    </table>
+</body>
+
+</html>

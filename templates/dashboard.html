@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Painel Administrativo</h2>
+
+<div class="balanco-box mb-4 p-4 bg-dark text-white rounded">
+    <h5><i class="bi bi-cash-coin"></i> Balanço Mensal da Assistência</h5>
+    <h3 class="text-success">R$ {{ faturamento_mensal }}</h3>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card bg-dark text-white mb-4">
+            <div class="card-header">
+                <i class="bi bi-bar-chart-fill"></i> Faturamento Mensal
+            </div>
+            <div class="card-body">
+                <div style="position:relative; height:300px;">
+                    <canvas id="graficoFaturamento"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card bg-dark text-white mb-4">
+            <div class="card-header">
+                <i class="bi bi-pie-chart-fill"></i> Ordens por Status
+            </div>
+            <div class="card-body">
+                <div style="position:relative; height:300px;">
+                    <canvas id="graficoStatus"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const meses = JSON.parse('{{ meses | tojson | safe }}');
+    const valores = JSON.parse('{{ valores | tojson | safe }}');
+    const statusLabels = JSON.parse('{{ status_labels | tojson | safe }}');
+    const statusCounts = JSON.parse('{{ status_counts | tojson | safe }}');
+
+    new Chart(document.getElementById('graficoFaturamento'), {
+        type: 'bar',
+        data: {
+            labels: meses,
+            datasets: [{
+                label: 'Faturamento (R$)',
+                data: valores,
+                backgroundColor: '#5865f2'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#fff' }
+                },
+                x: {
+                    ticks: { color: '#fff' }
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('graficoStatus'), {
+        type: 'doughnut',
+        data: {
+            labels: statusLabels,
+            datasets: [{
+                data: statusCounts,
+                backgroundColor: ['#99aab5', '#f1c40f', '#2ecc71', '#9b59b6']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#fff' }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

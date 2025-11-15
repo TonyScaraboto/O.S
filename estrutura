@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ordem_servico_app/
 ├── app.py
 ├── routes/
@@ -11,4 +12,19 @@ ordem_servico_app/
 │   ├── ordens.html
 │   └── nova_ordem.html
 ├── static/
+=======
+ordem_servico_app/
+├── app.py
+├── routes/
+│   ├── auth.py
+│   ├── ordens.py
+├── models/
+│   └── database.py
+├── templates/
+│   ├── login.html
+│   ├── dashboard.html
+│   ├── ordens.html
+│   └── nova_ordem.html
+├── static/
+>>>>>>> 01822b7 (Primeiro commit do sistema SaaS de ordens)
 │   └── bootstrap.min.css

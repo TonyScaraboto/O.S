@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Download de Ordens por Mês{% endblock %}
+
+{% block content %}
+
+
+
+{# Corrige a construção de lista_meses para evitar uso de append #}
+{% if meses is defined %}
+{% set lista_meses = meses %}
+{% elif pdfs_por_mes is defined %}
+{% set lista_meses = [] %}
+{% for nome_mes, arquivos in pdfs_por_mes.items() %}
+{% set lista_meses = lista_meses + [{'nome': nome_mes, 'arquivos': arquivos, 'codigo': nome_mes}] %}
+{% endfor %}
+{% else %}
+{% set lista_meses = [] %}
+{% endif %}
+<hr>
+<h5>Diagnóstico: Arquivos realmente presentes na pasta <code>static/pdfs</code></h5>
+<ul>
+    {% for arq in arquivos_reais %}
+    <li>{{ arq }}</li>

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Perfil do Cliente{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="card bg-dark text-white shadow-lg" style="max-width: 420px; width: 100%; border-radius: 18px;">
+        <div class="card-header text-center border-0 bg-dark" style="background: transparent; padding-bottom: 0;">
+            <div class="position-relative d-inline-block mb-3">
+                {% if foto_perfil %}
+                <img src="{{ url_for('static', filename='fotos_perfil/' ~ foto_perfil) }}" alt="Foto de Perfil"
+                    class="rounded-circle"
+                    style="width: 90px; height: 90px; object-fit: cover; border: 2px solid #fff;">
+                {% else %}
+                <i class="bi bi-person-circle" style="font-size: 2.5rem;"></i>
+                {% endif %}
+                <!-- Botão abre modal para editar foto e nome -->
+                <button type="button" class="btn btn-light btn-sm p-1"
+                    style="border-radius: 50%; opacity: 0.85; box-shadow: 0 2px 8px #0003; position: absolute; bottom: 0; right: 0;"
+                    data-bs-toggle="modal" data-bs-target="#modalEditarPerfil" title="Alterar Foto ou Nome">
+                    <i class="bi bi-pencil-fill" style="color: #333;"></i>
+                </button>
+            </div>
+            <div id="nomeAssistenciaBox" class="d-flex align-items-center justify-content-center gap-2 mt-3 mb-0">
+                <span id="nomeAssistenciaTexto" style="font-size: 1.35rem; font-weight: 600; letter-spacing: 0.5px;">{{
+                    nome_assistencia }}</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <p><strong>Nome do Usuário:</strong> {{ nome_usuario }}</p>
+            <p><strong>Data da Aquisição do SaaS:</strong> {{ data_aquisicao }}</p>
+        </div>
+        <div class="card-footer text-center">
+            <a href="{{ url_for('ordens.dashboard') }}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left-circle"></i> Voltar ao Painel
+            </a>
+        </div>
+    </div>
+</div>
+<!-- Modal de edição de perfil -->
+<div class="modal fade" id="modalEditarPerfil" tabindex="-1" aria-labelledby="modalEditarPerfilLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <form method="post" enctype="multipart/form-data" action="{{ url_for('auth.perfil') }}">
+                <input type="hidden" name="acao" value="alterar_nome">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" id="modalEditarPerfilLabel">Editar Perfil</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3 text-center">
+                        {% if foto_perfil %}
+                        <img src="{{ url_for('static', filename='fotos_perfil/' ~ foto_perfil) }}" alt="Foto de Perfil"
+                            class="rounded-circle mb-2"
+                            style="width: 90px; height: 90px; object-fit: cover; border: 2px solid #fff;">
+                        {% else %}
+                        <i class="bi bi-person-circle" style="font-size: 2.5rem;"></i>
+                        {% endif %}
+                        <input type="file" class="form-control mt-2" id="foto_perfil_modal" name="foto_perfil"
+                            accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label for="novo_nome_assistencia_modal" class="form-label">Nome da Assistência</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary text-center"
+                            id="novo_nome_assistencia_modal" name="novo_nome_assistencia" value="{{ nome_assistencia }}"
+                            required>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
