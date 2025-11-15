@@ -50,7 +50,7 @@ def init_db():
         )
     ''')
 
-    # Tabela de vendas de acessórios
+    # Tabela de vendas de acessórios (multi-tenant)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS acessorios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,7 +58,8 @@ def init_db():
             quantidade INTEGER NOT NULL,
             preco_unitario REAL NOT NULL,
             receita_total REAL NOT NULL,
-            data_venda TEXT NOT NULL
+            data_venda TEXT NOT NULL,
+            cliente TEXT NOT NULL
         )
     ''')
 

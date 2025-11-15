@@ -13,17 +13,101 @@
 
 <body style="min-height:100vh; margin:0; padding:0; overflow:hidden; background: #0a1833; position:relative;">
     <!-- Fundo tecnológico com linhas azuis -->
-    <svg style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0;" viewBox="0 0 1920 1080"
-        fill="none" xmlns="http://www.w3.org/2000/svg">
-        <line x1="0" y1="100" x2="1920" y2="200" stroke="#1e90ff" stroke-width="2" opacity="0.2" />
-        <line x1="0" y1="300" x2="1920" y2="400" stroke="#00bfff" stroke-width="2" opacity="0.18" />
-        <line x1="0" y1="500" x2="1920" y2="600" stroke="#1e90ff" stroke-width="2" opacity="0.15" />
-        <line x1="0" y1="700" x2="1920" y2="800" stroke="#00bfff" stroke-width="2" opacity="0.13" />
-        <line x1="0" y1="900" x2="1920" y2="1000" stroke="#1e90ff" stroke-width="2" opacity="0.11" />
-        <line x1="200" y1="0" x2="400" y2="1080" stroke="#00bfff" stroke-width="2" opacity="0.10" />
-        <line x1="800" y1="0" x2="1000" y2="1080" stroke="#1e90ff" stroke-width="2" opacity="0.10" />
-        <line x1="1400" y1="0" x2="1600" y2="1080" stroke="#00bfff" stroke-width="2" opacity="0.10" />
+    <svg id="br-linhas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0;" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line class="br-linha" x1="0" y1="100" x2="1920" y2="200" stroke="#1e90ff" stroke-width="2" opacity="0.2" />
+        <line class="br-linha" x1="0" y1="300" x2="1920" y2="400" stroke="#00bfff" stroke-width="2" opacity="0.18" />
+        <line class="br-linha" x1="0" y1="500" x2="1920" y2="600" stroke="#1e90ff" stroke-width="2" opacity="0.15" />
+        <line class="br-linha" x1="0" y1="700" x2="1920" y2="800" stroke="#00bfff" stroke-width="2" opacity="0.13" />
+        <line class="br-linha" x1="0" y1="900" x2="1920" y2="1000" stroke="#1e90ff" stroke-width="2" opacity="0.11" />
+        <line class="br-linha" x1="200" y1="0" x2="400" y2="1080" stroke="#00bfff" stroke-width="2" opacity="0.10" />
+        <line class="br-linha" x1="800" y1="0" x2="1000" y2="1080" stroke="#1e90ff" stroke-width="2" opacity="0.10" />
+        <line class="br-linha" x1="1400" y1="0" x2="1600" y2="1080" stroke="#00bfff" stroke-width="2" opacity="0.10" />
     </svg>
+
+    <!-- Blade Runner light effect on SVG lines -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Neon lines
+        const lines = document.querySelectorAll('.br-linha');
+        lines.forEach((line, idx) => {
+            setInterval(() => {
+                let totalLength = line.getTotalLength();
+                let dash = 180 + 40 * Math.sin(Date.now()/400 + idx);
+                let offset = (Date.now()/6 + idx*200) % totalLength;
+                line.setAttribute('stroke-dasharray', `${dash},${totalLength}`);
+                line.setAttribute('stroke-dashoffset', offset);
+            }, 30 + idx*7);
+        });
+
+        // Neon rain effect
+        const rainContainer = document.createElement('div');
+        rainContainer.className = 'neon-rain';
+        document.body.appendChild(rainContainer);
+        for(let i=0;i<80;i++){
+            let drop = document.createElement('div');
+            drop.className = 'rain-drop';
+            drop.style.left = Math.random()*100 + 'vw';
+            drop.style.animationDelay = (Math.random()*3) + 's';
+            drop.style.animationDuration = (1.5 + Math.random()*1.5) + 's';
+            rainContainer.appendChild(drop);
+        }
+    });
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+    body {
+        background: linear-gradient(120deg, #0a1833 60%, #1a1a2e 100%);
+        color: #fff;
+        font-family: 'Share Tech Mono', 'Orbitron', 'Segoe UI', monospace;
+        overflow: hidden;
+    }
+    .login-container {
+        background: rgba(20, 30, 50, 0.92);
+        box-shadow: 0 0 32px 4px #00bfff33, 0 0 0 1px #1e90ff44;
+        border: 1.5px solid #1e90ff44;
+    }
+    .login-container h2 {
+        color: #00bfff;
+        text-shadow: 0 0 8px #1e90ff, 0 0 2px #00bfff;
+        font-family: 'Orbitron', 'Share Tech Mono', monospace;
+        letter-spacing: 2px;
+    }
+    .btn-primary {
+        background: linear-gradient(90deg, #00bfff 60%, #1e90ff 100%);
+        border: none;
+        box-shadow: 0 0 8px #00bfff88;
+        font-family: 'Share Tech Mono', 'Orbitron', monospace;
+        letter-spacing: 1px;
+    }
+    .btn-primary:hover {
+        background: #1e90ff;
+        box-shadow: 0 0 16px #00bfffcc;
+    }
+    .br-linha {
+        filter: drop-shadow(0 0 8px #00bfff) drop-shadow(0 0 16px #1e90ff);
+        transition: filter 0.2s;
+    }
+    .neon-rain {
+        pointer-events: none;
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        z-index: 2;
+    }
+    .rain-drop {
+        position: absolute;
+        top: -10vh;
+        width: 2px;
+        height: 60px;
+        background: linear-gradient(180deg, #00bfff 0%, #1e90ff 80%, transparent 100%);
+        opacity: 0.18;
+        border-radius: 1px;
+        filter: blur(0.5px) drop-shadow(0 0 6px #00bfff);
+        animation: rain-fall linear infinite;
+    }
+    @keyframes rain-fall {
+        to { top: 110vh; }
+    }
+    </style>
 
     <div class="login-container" style="position:relative; z-index:1;">
         <h2>Área Restrita</h2>

@@ -46,7 +46,7 @@ def gerar_pdf(id):
 
 def dashboard():
     if 'user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
@@ -68,15 +68,16 @@ def dashboard():
     mes_atual = datetime.now().strftime('%Y-%m')
     user_email = session.get('user')
     is_admin = session.get('role') == 'admin'
+    # Para ordens, admin vê tudo; para acessórios, todos só veem os próprios
     if is_admin:
         cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_atual,))
         total_ordens_mes = cursor.fetchone()[0] or 0
-        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_atual,))
+        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ? AND cliente=?', (mes_atual, user_email))
         total_acessorios_mes = cursor.fetchone()[0] or 0
     else:
         cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ? AND cliente=?', (mes_atual, user_email))
         total_ordens_mes = cursor.fetchone()[0] or 0
-        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_atual,))
+        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ? AND cliente=?', (mes_atual, user_email))
         total_acessorios_mes = cursor.fetchone()[0] or 0
 
     faturamento_mensal = total_ordens_mes + total_acessorios_mes
@@ -91,12 +92,12 @@ def dashboard():
         if is_admin:
             cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_ref,))
             val_ordens = cursor.fetchone()[0] or 0
-            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
+            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ? AND cliente=?', (mes_ref, user_email))
             val_acess = cursor.fetchone()[0] or 0
         else:
             cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ? AND cliente=?', (mes_ref, user_email))
             val_ordens = cursor.fetchone()[0] or 0
-            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
+            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ? AND cliente=?', (mes_ref, user_email))
             val_acess = cursor.fetchone()[0] or 0
         valores.append(val_ordens + val_acess)
         historico_mensal.append({'mes': mes_ref, 'valor': val_ordens + val_acess})
@@ -131,7 +132,7 @@ def dashboard():
 
 def nova_ordem():
     if 'user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
@@ -185,7 +186,7 @@ def nova_ordem():
 
 def listar_ordens():
     if 'user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
@@ -218,7 +219,7 @@ def listar_ordens():
 
 def faturamento():
     if 'user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
@@ -232,12 +233,12 @@ def faturamento():
     if is_admin:
         cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y", data_criacao) = ?', (ano,))
         total_ordens = cursor.fetchone()[0] or 0
-        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y", data_venda) = ?', (ano,))
+        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y", data_venda) = ? AND cliente=?', (ano, user_email))
         total_acessorios = cursor.fetchone()[0] or 0
     else:
         cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y", data_criacao) = ? AND cliente=?', (ano, user_email))
         total_ordens = cursor.fetchone()[0] or 0
-        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y", data_venda) = ?', (ano,))
+        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y", data_venda) = ? AND cliente=?', (ano, user_email))
         total_acessorios = cursor.fetchone()[0] or 0
 
     # Histórico dos últimos 6 meses
@@ -248,12 +249,12 @@ def faturamento():
         if is_admin:
             cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_ref,))
             val_ordens = cursor.fetchone()[0] or 0
-            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
+            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ? AND cliente=?', (mes_ref, user_email))
             val_acess = cursor.fetchone()[0] or 0
         else:
             cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ? AND cliente=?', (mes_ref, user_email))
             val_ordens = cursor.fetchone()[0] or 0
-            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
+            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ? AND cliente=?', (mes_ref, user_email))
             val_acess = cursor.fetchone()[0] or 0
         historico_mensal.append((mes_ref, f"{(val_ordens + val_acess):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")))
 
@@ -267,25 +268,29 @@ def faturamento():
 
 def listar_acessorios():
     if 'user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
 
     conn = sqlite3.connect('ordens.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM acessorios ORDER BY data_venda DESC')
+    user_email = session.get('user')
+    # O admin agora só vê suas próprias vendas, igual aos outros usuários
+    cursor.execute('SELECT * FROM acessorios WHERE cliente=? ORDER BY data_venda DESC', (user_email,))
     vendas = cursor.fetchall()
+    cursor.execute('SELECT strftime("%Y-%m", data_venda) as mes, SUM(receita_total) FROM acessorios WHERE cliente=? GROUP BY mes ORDER BY mes DESC', (user_email,))
+    historico_vendas = cursor.fetchall()
     conn.close()
 
-    return render_template('acessorios.html', vendas=vendas)
+    return render_template('acessorios.html', vendas=vendas, historico_vendas=historico_vendas)
 
 # Acessórios - salvar
 @ordens_bp.route('/salvar_acessorio', methods=['POST'])
 
 def salvar_acessorio():
     if 'user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
@@ -295,6 +300,7 @@ def salvar_acessorio():
     preco_unitario = float(request.form.get('preco', 0))
     receita_total = quantidade * preco_unitario
     data_venda = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cliente = session.get('user')
 
     if not nome or quantidade <= 0 or preco_unitario <= 0:
         flash("Preencha todos os campos corretamente.")
@@ -303,9 +309,9 @@ def salvar_acessorio():
     conn = sqlite3.connect('ordens.db')
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO acessorios (nome, quantidade, preco_unitario, receita_total, data_venda)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (nome, quantidade, preco_unitario, receita_total, data_venda))
+        INSERT INTO acessorios (nome, quantidade, preco_unitario, receita_total, data_venda, cliente)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (nome, quantidade, preco_unitario, receita_total, data_venda, cliente))
     conn.commit()
     conn.close()
 
@@ -316,14 +322,19 @@ def salvar_acessorio():
 
 def remover_acessorio(id):
     if 'user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
 
     conn = sqlite3.connect('ordens.db')
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM acessorios WHERE id = ?', (id,))
+    user_email = session.get('user')
+    is_admin = session.get('role') == 'admin'
+    if is_admin:
+        cursor.execute('DELETE FROM acessorios WHERE id = ?', (id,))
+    else:
+        cursor.execute('DELETE FROM acessorios WHERE id = ? AND cliente = ?', (id, user_email))
     conn.commit()
     conn.close()
 
@@ -333,7 +344,7 @@ def remover_acessorio(id):
 @ordens_bp.route('/atualizar_status/<int:id>', methods=['POST'])
 def atualizar_status(id):
     if 'user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
@@ -354,7 +365,7 @@ import urllib.parse
 @ordens_bp.route('/download_ordens')
 def download_ordens():
     if 'user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
@@ -375,7 +386,7 @@ def download_ordens():
 @ordens_bp.route('/excluir_os/<int:id>', methods=['POST'])
 def excluir_os(id):
     if 'user' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
