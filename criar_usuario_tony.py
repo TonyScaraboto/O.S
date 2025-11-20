@@ -1,3 +1,16 @@
+<<<<<<< HEAD
+
+import sqlite3
+conn = sqlite3.connect('ordens.db')
+cursor = conn.cursor()
+cursor.execute("DELETE FROM clientes WHERE email = 'tony'")
+cursor.execute("DELETE FROM usuarios WHERE username = 'tony'")
+cursor.execute("INSERT INTO clientes (nome_assistencia, email, senha, data_cadastro, trial_ativo, assinatura_ativa) VALUES (?, ?, ?, date('now'), 1, 1)", ("Tony Assistência", "tony", "tony123"))
+cursor.execute("INSERT INTO usuarios (username, password, role) VALUES (?, ?, ?)", ("tony", "tony123", "cliente"))
+conn.commit()
+conn.close()
+print('Usuário tony criado com sucesso!')
+=======
 import sqlite3
 conn = sqlite3.connect('ordens.db')
 cursor = conn.cursor()
@@ -24,3 +37,4 @@ cursor.execute("INSERT INTO usuarios (username, password, role) VALUES (?, ?, ?)
 conn.commit()
 conn.close()
 print('Usuário tony criado com sucesso!')
+>>>>>>> 1b805bc (Multi-tenant: cada assistência vê apenas seus dados, correções de acesso, painel e faturamento anual isolados por empresa)

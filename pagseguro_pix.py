@@ -62,10 +62,10 @@ import requests
 import json
 
 # Substitua pelos seus dados reais do PagSeguro
-PAGSEGURO_CLIENT_ID = 'SEU_CLIENT_ID'
-PAGSEGURO_CLIENT_SECRET = 'SEU_CLIENT_SECRET'
+PAGSEGURO_CLIENT_ID = '63e7d657-d270-4a39-8167-7fe5ef74078272a5de0b4d63aead90b86a91df82395131a0-13fd-4b3a-a4bd-b2980a646530'
+PAGSEGURO_CLIENT_SECRET = '63e7d657-d270-4a39-8167-7fe5ef74078272a5de0b4d63aead90b86a91df82395131a0-13fd-4b3a-a4bd-b2980a646530'
 PAGSEGURO_PIX_RECEIVER = 'comicsultimate@gmail.com'  # Chave Pix
-PAGSEGURO_API_BASE = 'https://pix.sandbox.api.pagseguro.com'  # Use sandbox para testes
+PAGSEGURO_API_BASE = 'https://pix.api.pagseguro.com'  # Produção
 
 # Função para obter token OAuth2
 

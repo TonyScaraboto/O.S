@@ -10,6 +10,7 @@ def init_db():
             nome_assistencia TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             senha TEXT NOT NULL,
+            senha_pura TEXT,
             data_cadastro TEXT NOT NULL,
             trial_ativo INTEGER DEFAULT 1,
             data_fim_trial TEXT,
@@ -20,8 +21,8 @@ def init_db():
     ''')
     # Inserção de admin padrão na tabela clientes
     cursor.execute('''
-        INSERT OR IGNORE INTO clientes (nome_assistencia, email, senha, data_cadastro, trial_ativo, data_fim_trial, assinatura_ativa)
-        VALUES ('ADMIN', 'admin@saas.com', 'admin123', '2024-01-01', 0, NULL, 1)
+        INSERT OR IGNORE INTO clientes (nome_assistencia, email, senha, senha_pura, data_cadastro, trial_ativo, data_fim_trial, assinatura_ativa)
+        VALUES ('ADMIN', 'admin@saas.com', 'admin123', 'admin123', '2024-01-01', 0, NULL, 1)
     ''')
 
     # Tabela de usuários
@@ -34,7 +35,7 @@ def init_db():
         )
     ''')
 
-    # Tabela de ordens com campo imagem e data_criacao
+    
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS ordens (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,3 +1,41 @@
+<<<<<<< HEAD
+# Sistema SaaS de Ordens de Serviço
+
+Este é um sistema SaaS (Software como Serviço) para gestão de ordens de serviço, multi-tenant, com controle de período gratuito, cobrança automática via Pix (PagSeguro), painel administrativo e interface moderna.
+
+## Funcionalidades
+
+## Instalação
+1. Clone o repositório:
+   ```sh
+   git clone https://github.com/TonyScaraboto/ordem-servico-saas.git
+   cd ordem-servico-saas
+   ```
+2. Crie e ative um ambiente virtual:
+   ```sh
+   python -m venv venv
+   venv\Scripts\activate  # Windows
+   # ou
+   source venv/bin/activate  # Linux/Mac
+   ```
+3. Instale as dependências:
+   ```sh
+   pip install -r requirements.txt
+   ```
+4. Execute o sistema:
+   ```sh
+   python app.py
+   ```
+5. Acesse no navegador: [http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+## Configuração PagSeguro Pix
+
+## Estrutura de Pastas
+
+## Observações
+
+Desenvolvido por Scartech Solution.
+=======
 # Sistema SaaS de Ordens de Serviço
 
 Este é um sistema SaaS (Software como Serviço) para gestão de ordens de serviço, multi-tenant, com controle de período gratuito, cobrança automática via Pix (PagSeguro), painel administrativo e interface moderna.
@@ -53,3 +91,4 @@ Este é um sistema SaaS (Software como Serviço) para gestão de ordens de servi
 
 ---
 Desenvolvido por Scartech Solution.
+>>>>>>> 1b805bc (Multi-tenant: cada assistência vê apenas seus dados, correções de acesso, painel e faturamento anual isolados por empresa)

@@ -25,14 +25,13 @@ def gerar_pdf(id):
     if not ordem:
         return "Ordem não encontrada.", 404
 
-    # Pega o nome da imagem (coluna 7 ou 8, dependendo do modelo)
+    
     foto_nome = None
     if len(ordem) > 7 and ordem[7]:
-        # Caminho absoluto para a imagem
+        
         foto_nome = os.path.join(current_app.root_path, 'static', 'imagens', ordem[7])
-        # Para o PDFKit funcionar, precisa ser file://
+        
         foto_nome = 'file:///' + foto_nome.replace('\\', '/').replace(' ', '%20')
-    from datetime import datetime
     html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now())
     options = {'enable-local-file-access': None}
     pdf = pdfkit.from_string(html, False, configuration=config_pdfkit, options=options)
@@ -42,7 +41,7 @@ def gerar_pdf(id):
     response.headers['Content-Disposition'] = f'inline; filename=ordem_{id}.pdf'
     return response
 
-# Dashboard com gráficos e indicadores
+ 
 @ordens_bp.route('/dashboard')
 
 def dashboard():
@@ -55,12 +54,30 @@ def dashboard():
     conn = sqlite3.connect('ordens.db')
     cursor = conn.cursor()
 
-    mes_atual = datetime.now().strftime('%Y-%m')
-    cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_atual,))
-    total_ordens_mes = cursor.fetchone()[0] or 0
+    # Buscar dias restantes do trial para o usuário logado
+    dias_trial_restantes = None
+    data_fim_trial = None
+    if 'user' in session and session.get('role') != 'admin':
+        user_email = session.get('user')
+        cursor.execute('SELECT data_fim_trial FROM clientes WHERE email=?', (user_email,))
+        row = cursor.fetchone()
+        if row and row[0]:
+            data_fim_trial = row[0]
+            dias_trial_restantes = (datetime.strptime(data_fim_trial, '%Y-%m-%d') - datetime.now()).days
 
-    cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_atual,))
-    total_acessorios_mes = cursor.fetchone()[0] or 0
+    mes_atual = datetime.now().strftime('%Y-%m')
+    user_email = session.get('user')
+    is_admin = session.get('role') == 'admin'
+    if is_admin:
+        cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_atual,))
+        total_ordens_mes = cursor.fetchone()[0] or 0
+        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_atual,))
+        total_acessorios_mes = cursor.fetchone()[0] or 0
+    else:
+        cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ? AND cliente=?', (mes_atual, user_email))
+        total_ordens_mes = cursor.fetchone()[0] or 0
+        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_atual,))
+        total_acessorios_mes = cursor.fetchone()[0] or 0
 
     faturamento_mensal = total_ordens_mes + total_acessorios_mes
 
@@ -71,18 +88,27 @@ def dashboard():
         data_ref = datetime.now() - timedelta(days=30 * i)
         mes_ref = data_ref.strftime('%Y-%m')
         meses.append(mes_ref)
-        cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_ref,))
-        val_ordens = cursor.fetchone()[0] or 0
-        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
-        val_acess = cursor.fetchone()[0] or 0
+        if is_admin:
+            cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_ref,))
+            val_ordens = cursor.fetchone()[0] or 0
+            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
+            val_acess = cursor.fetchone()[0] or 0
+        else:
+            cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ? AND cliente=?', (mes_ref, user_email))
+            val_ordens = cursor.fetchone()[0] or 0
+            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
+            val_acess = cursor.fetchone()[0] or 0
         valores.append(val_ordens + val_acess)
         historico_mensal.append({'mes': mes_ref, 'valor': val_ordens + val_acess})
 
-
     # Garantir todos os status possíveis
     status_possiveis = ['Recebido', 'Em análise', 'Concluído', 'Entregue']
-    cursor.execute('SELECT status, COUNT(*) FROM ordens GROUP BY status')
-    status_data = dict(cursor.fetchall())
+    if is_admin:
+        cursor.execute('SELECT status, COUNT(*) FROM ordens GROUP BY status')
+        status_data = dict(cursor.fetchall())
+    else:
+        cursor.execute('SELECT status, COUNT(*) FROM ordens WHERE cliente=? GROUP BY status', (user_email,))
+        status_data = dict(cursor.fetchall())
     status_labels = status_possiveis
     status_counts = [status_data.get(s, 0) for s in status_possiveis]
 
@@ -95,7 +121,9 @@ def dashboard():
         meses=meses,
         valores=valores,
         status_labels=status_labels,
-        status_counts=status_counts
+        status_counts=status_counts,
+        dias_trial_restantes=dias_trial_restantes,
+        data_fim_trial=data_fim_trial
     )
 
 # Cadastro de nova ordem
@@ -112,7 +140,8 @@ def nova_ordem():
 
 
     if request.method == 'POST':
-        cliente = request.form.get('cliente', '').strip()
+        # O cliente (assistência) é sempre o email do usuário logado
+        cliente = session.get('user')
         telefone = request.form.get('telefone', '').strip()
         aparelho = request.form.get('aparelho', '').strip()
         defeito = request.form.get('defeito', '').strip()
@@ -121,7 +150,6 @@ def nova_ordem():
         data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         imagem_nome = None
 
-        # Upload da imagem
         if 'foto_ordem' in request.files:
             foto = request.files['foto_ordem']
             if foto and foto.filename:
@@ -164,15 +192,21 @@ def listar_ordens():
 
     conn = sqlite3.connect('ordens.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM ordens ORDER BY data_criacao DESC')
-    todas_ordens = cursor.fetchall()
+    user_email = session.get('user')
+    is_admin = session.get('role') == 'admin'
+    if is_admin:
+        cursor.execute('SELECT * FROM ordens ORDER BY data_criacao DESC')
+        todas_ordens = cursor.fetchall()
+    else:
+        cursor.execute('SELECT * FROM ordens WHERE cliente=? ORDER BY data_criacao DESC', (user_email,))
+        todas_ordens = cursor.fetchall()
     conn.close()
 
     ordens_por_mes = {}
     for ordem in todas_ordens:
         if not ordem or ordem[3] is None:
             continue
-        data = ordem[3][:7]  # Supondo data_criacao na coluna 3 (formato YYYY-MM-DD)
+        data = ordem[3][:7] 
         if data not in ordens_por_mes:
             ordens_por_mes[data] = []
         ordens_por_mes[data].append(ordem)
@@ -192,22 +226,35 @@ def faturamento():
     ano = datetime.now().strftime('%Y')
     conn = sqlite3.connect('ordens.db')
     cursor = conn.cursor()
+    user_email = session.get('user')
+    is_admin = session.get('role') == 'admin'
 
-    cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y", data_criacao) = ?', (ano,))
-    total_ordens = cursor.fetchone()[0] or 0
-
-    cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y", data_venda) = ?', (ano,))
-    total_acessorios = cursor.fetchone()[0] or 0
+    if is_admin:
+        cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y", data_criacao) = ?', (ano,))
+        total_ordens = cursor.fetchone()[0] or 0
+        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y", data_venda) = ?', (ano,))
+        total_acessorios = cursor.fetchone()[0] or 0
+    else:
+        cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y", data_criacao) = ? AND cliente=?', (ano, user_email))
+        total_ordens = cursor.fetchone()[0] or 0
+        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y", data_venda) = ?', (ano,))
+        total_acessorios = cursor.fetchone()[0] or 0
 
     # Histórico dos últimos 6 meses
     historico_mensal = []
     for i in range(5, -1, -1):
         data_ref = datetime.now() - timedelta(days=30 * i)
         mes_ref = data_ref.strftime('%Y-%m')
-        cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_ref,))
-        val_ordens = cursor.fetchone()[0] or 0
-        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
-        val_acess = cursor.fetchone()[0] or 0
+        if is_admin:
+            cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ?', (mes_ref,))
+            val_ordens = cursor.fetchone()[0] or 0
+            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
+            val_acess = cursor.fetchone()[0] or 0
+        else:
+            cursor.execute('SELECT SUM(valor) FROM ordens WHERE strftime("%Y-%m", data_criacao) = ? AND cliente=?', (mes_ref, user_email))
+            val_ordens = cursor.fetchone()[0] or 0
+            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE strftime("%Y-%m", data_venda) = ?', (mes_ref,))
+            val_acess = cursor.fetchone()[0] or 0
         historico_mensal.append((mes_ref, f"{(val_ordens + val_acess):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")))
 
     conn.close()
@@ -282,7 +329,7 @@ def remover_acessorio(id):
 
     return redirect(url_for('ordens.listar_acessorios'))
 
-# Atualização de status da ordem
+ 
 @ordens_bp.route('/atualizar_status/<int:id>', methods=['POST'])
 def atualizar_status(id):
     if 'user' not in session:
