@@ -10,18 +10,21 @@
             </button>
         </div>
         <!-- Modal de cadastro de novo usuário -->
-        <div class="modal fade" id="modalNovoUsuario" tabindex="-1" aria-labelledby="modalNovoUsuarioLabel" aria-hidden="true">
+        <div class="modal fade" id="modalNovoUsuario" tabindex="-1" aria-labelledby="modalNovoUsuarioLabel"
+            aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content bg-dark text-white">
                     <form method="post" action="{{ url_for('admin.painel_admin') }}">
                         <div class="modal-header">
                             <h5 class="modal-title" id="modalNovoUsuarioLabel">Adicionar Novo Usuário</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div class="mb-3">
                                 <label for="novo_nome_assistencia" class="form-label">Nome da Assistência</label>
-                                <input type="text" class="form-control" id="novo_nome_assistencia" name="novo_nome_assistencia" required>
+                                <input type="text" class="form-control" id="novo_nome_assistencia"
+                                    name="novo_nome_assistencia" required>
                             </div>
                             <div class="mb-3">
                                 <label for="novo_email" class="form-label">E-mail</label>
@@ -34,7 +37,8 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-primary" name="criar_usuario" value="1">Adicionar</button>
+                            <button type="submit" class="btn btn-primary" name="criar_usuario"
+                                value="1">Adicionar</button>
                         </div>
                     </form>
                 </div>

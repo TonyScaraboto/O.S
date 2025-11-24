@@ -30,25 +30,26 @@
             <p><strong>Nome do Usuário:</strong> {{ nome_usuario }}</p>
             <p><strong>Data da Aquisição do SaaS:</strong> {{ data_aquisicao }}</p>
             {% if dias_trial_restantes is not none and dias_trial_restantes >= 0 %}
-                <div class="alert alert-info mt-3" role="alert">
-                    <i class="bi bi-clock-history"></i>
-                    <strong>Período grátis:</strong> {{ dias_trial_restantes }} dia{{ 's' if dias_trial_restantes != 1 else '' }} restante{{ 's' if dias_trial_restantes != 1 else '' }}.
-                    <br>
-                    <small>Seu acesso gratuito termina em {{ data_fim_trial }}.</small>
-                </div>
-            {% elif dias_trial_restantes is not none and dias_trial_restantes < 0 %}
-                <div class="alert alert-warning mt-3" role="alert">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    Seu período gratuito expirou. Realize o pagamento para continuar usando o sistema.
-                </div>
-            {% endif %}
+            <div class="alert alert-info mt-3" role="alert">
+                <i class="bi bi-clock-history"></i>
+                <strong>Período grátis:</strong> {{ dias_trial_restantes }} dia{{ 's' if dias_trial_restantes != 1 else
+                '' }} restante{{ 's' if dias_trial_restantes != 1 else '' }}.
+                <br>
+                <small>Seu acesso gratuito termina em {{ data_fim_trial }}.</small>
+            </div>
+            {% elif dias_trial_restantes is not none and dias_trial_restantes < 0 %} <div
+                class="alert alert-warning mt-3" role="alert">
+                <i class="bi bi-exclamation-triangle"></i>
+                Seu período gratuito expirou. Realize o pagamento para continuar usando o sistema.
         </div>
-        <div class="card-footer text-center">
-            <a href="{{ url_for('ordens.dashboard') }}" class="btn btn-outline-light">
-                <i class="bi bi-arrow-left-circle"></i> Voltar ao Painel
-            </a>
-        </div>
+        {% endif %}
     </div>
+    <div class="card-footer text-center">
+        <a href="{{ url_for('ordens.dashboard') }}" class="btn btn-outline-light">
+            <i class="bi bi-arrow-left-circle"></i> Voltar ao Painel
+        </a>
+    </div>
+</div>
 </div>
 <!-- Modal de edição de perfil -->
 <div class="modal fade" id="modalEditarPerfil" tabindex="-1" aria-labelledby="modalEditarPerfilLabel"
