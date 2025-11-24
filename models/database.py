@@ -1,7 +1,10 @@
 import sqlite3
+import os
 
 def init_db():
-    conn = sqlite3.connect('ordens.db')
+    # Vercel: use diretório temporário para escrita
+    db_path = os.environ.get('ORDENS_DB_PATH', '/tmp/ordens.db')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     # Tabela de clientes (multi-tenant)
     cursor.execute('''

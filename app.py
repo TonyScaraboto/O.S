@@ -4,6 +4,8 @@ from routes.ordens import ordens_bp
 from routes.cadastro import cadastro_bp
 from routes.admin import admin_bp
 from routes.assinatura import assinatura_bp
+import os
+os.environ['ORDENS_DB_PATH'] = '/tmp/ordens.db'
 from models.database import init_db
 import click
 
