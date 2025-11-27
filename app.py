@@ -26,16 +26,21 @@ app.register_blueprint(assinatura_bp)
 app.register_blueprint(pdf_api_bp)
 
 # Rota principal para Vercel
-@app.route('/')
-def home():
-    return render_template('login.html')
+import os
+from flask import Flask, render_template
+from routes.auth import auth_bp
+from routes.ordens import ordens_bp
+from routes.cadastro import cadastro_bp
+from routes.admin import admin_bp
+from routes.assinatura import assinatura_bp
+from api.pdf_api import pdf_api_bp
+import click
 
-@app.cli.command("create-user")
-@click.argument("name")
-def create_user(name):
-    app.run(host="0.0.0.0", port=5000, debug=True)
+os.environ['ORDENS_DB_PATH'] = '/tmp/ordens.db'
+from models.database import get_db_path, init_db
 
-# Executa o servidor Flask
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
+app = Flask(__name__)
+app.secret_key = 'sua_chave_secreta_aqui'
+    # Inicializa o banco de dados e garante registros padrão
+init_db()
 

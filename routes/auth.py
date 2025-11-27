@@ -116,15 +116,11 @@ def login():
             if user == 'admin' and pwd == 'admin123':
                 session['user'] = user
                 session['role'] = role
-                cursor.execute('SELECT assinatura_ativa, nome_assistencia, foto_perfil FROM clientes WHERE email=?', (user + '@saas.com',))
+                cursor.execute('SELECT nome_assistencia, foto_perfil FROM clientes WHERE email=?', (user + '@saas.com',))
                 cliente = cursor.fetchone()
                 if cliente:
-                    assinatura_ativa = cliente[0]
-                    if not assinatura_ativa:
-                        conn.close()
-                        return render_template('login.html', error='Acesso ainda não liberado pelo administrador.', current_year=datetime.now().year, last_user=user)
-                    session['nome_assistencia'] = cliente[1]
-                    session['foto_perfil'] = cliente[2] if cliente[2] else None
+                    session['nome_assistencia'] = cliente[0]
+                    session['foto_perfil'] = cliente[1] if cliente[1] else None
                 conn.close()
                 resp = make_response(redirect(url_for('ordens.dashboard')))
                 resp.set_cookie('last_user', user, max_age=60*60*24*30)
