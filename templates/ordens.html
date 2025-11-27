@@ -69,9 +69,14 @@
                 </td>
                 <td>{{ ordem[8] }}</td>
                 <td class="d-flex gap-1">
-                    <a href="/pdf_ordem/{{ ordem[0] }}" class="btn btn-sm btn-outline-dark">PDF</a>
+                    <a href="/pdf_ordem/{{ ordem[0] }}" class="btn btn-sm btn-outline-dark" target="_blank">
+                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                    </a>
+                    <a href="/pdf_ordem/{{ ordem[0] }}" class="btn btn-sm btn-primary" target="_blank" onclick="setTimeout(function(){window.print();},500);return true;">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </a>
                     <form action="{{ url_for('ordens.excluir_os', id=ordem[0]) }}" method="post"
-                        onsubmit="return confirm('Tem certeza que deseja excluir esta O.S?');">
+                        onsubmit="return confirm('Tem certeza que deseja excluir esta O.S?');" style="display:inline;">
                         <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
                     </form>
                 </td>
