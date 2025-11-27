@@ -1,3 +1,13 @@
+import sqlite3
+from models.database import get_db_path
+"""import pdfkit"""
+import os
+from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, send_from_directory, abort, current_app
+from datetime import datetime, timedelta
+from routes.saas_guard import checar_trial_e_pagamento
+
+ordens_bp = Blueprint('ordens', __name__)
+
 # Rota para exibir ordens agrupadas por mês usando o template ordens_por_mes.html
 @ordens_bp.route('/ordens_por_mes')
 def ordens_por_mes():
@@ -29,15 +39,6 @@ def ordens_por_mes():
         ordens_por_mes[data].append(ordem)
 
     return render_template('ordens_por_mes.html', ordens_por_mes=ordens_por_mes)
-
-
-import sqlite3
-from models.database import get_db_path
-"""import pdfkit"""
-import os
-from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, send_from_directory, abort, current_app
-from datetime import datetime, timedelta
-from routes.saas_guard import checar_trial_e_pagamento
 
 ordens_bp = Blueprint('ordens', __name__)
 

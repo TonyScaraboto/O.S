@@ -4,7 +4,6 @@ import bcrypt
 def hash_if_needed(senha):
     if senha is None:
         return None
-    # Se já for hash bcrypt, não altera
     if senha.startswith('$2b$') or senha.startswith('$2a$'):
         return senha
     return bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
