@@ -1,7 +1,3 @@
-# Rota principal para Vercel
-@app.route('/')
-def home():
-    return 'Sistema rodando!'
 from flask import Flask
 from routes.auth import auth_bp
 from routes.ordens import ordens_bp
@@ -18,6 +14,11 @@ app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'
 
 init_db()
+
+# Rota principal para Vercel
+@app.route('/')
+def home():
+    return 'Sistema rodando!'
 
 # Registra os blueprints
 app.register_blueprint(auth_bp)
