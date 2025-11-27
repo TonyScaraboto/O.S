@@ -33,22 +33,28 @@ def gerar_pdf_api(id):
     html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now())
 
     # Envia o HTML para a API PDFShift
-    response = requests.post(
-        PDFSHIFT_URL,
-        auth=(PDFSHIFT_API_KEY, ''),
-        json={
-            'source': html,
-            'landscape': False,
-            'use_print': True
-        }
-    )
-    if response.status_code == 200:
-        pdf_bytes = response.content
-        return send_file(
-            io.BytesIO(pdf_bytes),
-            mimetype='application/pdf',
-            as_attachment=True,
-            download_name=f'ordem_{id}.pdf'
+    try:
+        response = requests.post(
+            PDFSHIFT_URL,
+            auth=(PDFSHIFT_API_KEY, ''),
+            json={
+                'source': html,
+                'landscape': False,
+                'use_print': True
+            },
+            timeout=30
         )
-    else:
-        return f"Erro ao gerar PDF: {response.text}", 500
+        if response.status_code == 200:
+            pdf_bytes = response.content
+            return send_file(
+                io.BytesIO(pdf_bytes),
+                mimetype='application/pdf',
+                as_attachment=True,
+                download_name=f'ordem_{id}.pdf'
+            )
+        else:
+            flash(f"Erro ao gerar PDF: {response.status_code} - {response.text}", "danger")
+            return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), erro_pdf=response.text)
+    except Exception as e:
+        flash(f"Falha na comunicação com a API PDFShift: {str(e)}", "danger")
+        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), erro_pdf=str(e))
