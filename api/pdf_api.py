@@ -8,7 +8,7 @@ from datetime import datetime
 
 pdf_api_bp = Blueprint('pdf_api', __name__)
 
-PDFSHIFT_API_KEY = 'SUA_API_KEY_AQUI'  # Troque pela sua chave da PDFShift
+PDFSHIFT_API_KEY = 'sk_1f707469f4cb0a5f4a0c6bfcce8aefdce86203f1'  # Chave real do usuário
 PDFSHIFT_URL = 'https://api.pdfshift.io/v3/convert/pdf'
 
 @pdf_api_bp.route('/pdf_ordem_api/<int:id>')
