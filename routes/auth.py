@@ -103,6 +103,7 @@ def login():
     if request.method == 'POST':
         try:
             user = request.form['username']
+            user_email = user if '@' in user else f"{user}@saas.com"
             pwd = request.form['password']
             print(f"Tentando login para usuário: {user}")
 
@@ -126,9 +127,9 @@ def login():
                 # Permite login do admin e tecnico com senha em texto puro
                 if (user == 'admin' and pwd == 'admin123') or (user == 'tecnico' and pwd == 'tecnico123') or (user == 'admin@saas.com' and pwd == 'admin123'):
                     print("Login texto puro permitido")
-                    session['user'] = user
+                    session['user'] = user_email
                     session['role'] = role
-                    cursor.execute('SELECT nome_assistencia, foto_perfil FROM clientes WHERE email=?', (user if '@' in user else user + '@saas.com',))
+                    cursor.execute('SELECT nome_assistencia, foto_perfil FROM clientes WHERE email=?', (user_email,))
                     cliente = cursor.fetchone()
                     print(f"Cliente encontrado: {cliente}")
                     if cliente:
@@ -147,7 +148,7 @@ def login():
                 if senha_hash and bcrypt.checkpw(pwd.encode('utf-8'), senha_hash_bytes):
                     print("Senha hash válida")
                     # Verifica se assinatura está ativa (liberada)
-                    cursor.execute('SELECT assinatura_ativa, nome_assistencia, foto_perfil FROM clientes WHERE email=?', (user if '@' in user else user + '@saas.com',))
+                    cursor.execute('SELECT assinatura_ativa, nome_assistencia, foto_perfil FROM clientes WHERE email=?', (user_email,))
                     cliente = cursor.fetchone()
                     print(f"Cliente encontrado: {cliente}")
                     if cliente:
@@ -158,7 +159,7 @@ def login():
                             return render_template('login.html', error='Acesso ainda não liberado pelo administrador.', current_year=datetime.now().year, last_user=user)
                         session['nome_assistencia'] = cliente[1]
                         session['foto_perfil'] = cliente[2] if cliente[2] else None
-                    session['user'] = user
+                    session['user'] = user_email
                     session['role'] = role
                     conn.close()
                     resp = make_response(redirect(url_for('ordens.dashboard')))
