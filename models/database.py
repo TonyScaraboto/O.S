@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from datetime import datetime
 
 def get_db_path():
     if os.environ.get('VERCEL_ENV'):
@@ -10,6 +11,14 @@ def init_db():
     db_path = get_db_path()
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+
+    def ensure_column(table, column_name, column_def, default_value=None):
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing_columns = [row[1] for row in cursor.fetchall()]
+        if column_name not in existing_columns:
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column_name} {column_def}")
+            if default_value is not None:
+                cursor.execute(f"UPDATE {table} SET {column_name}=?", (default_value,))
     # Tabela de clientes (multi-tenant)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS clientes (
@@ -17,7 +26,6 @@ def init_db():
             nome_assistencia TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             senha TEXT NOT NULL,
-            senha_pura TEXT,
             data_cadastro TEXT NOT NULL,
             trial_ativo INTEGER DEFAULT 1,
             data_fim_trial TEXT,
@@ -26,6 +34,15 @@ def init_db():
             pix_pagamento TEXT DEFAULT 'comicsultimate@gmail.com'
         )
     ''')
+
+    # Ajusta colunas que podem faltar em bancos antigos
+    ensure_column('clientes', 'foto_perfil', 'TEXT')
+    ensure_column('clientes', 'senha_pura', 'TEXT')
+    ensure_column('clientes', 'pix_pagamento', "TEXT DEFAULT 'comicsultimate@gmail.com'", 'comicsultimate@gmail.com')
+    ensure_column('clientes', 'assinatura_ativa', 'INTEGER DEFAULT 0', 0)
+    ensure_column('clientes', 'trial_ativo', 'INTEGER DEFAULT 1', 1)
+    ensure_column('clientes', 'data_cadastro', 'TEXT', datetime.now().strftime('%Y-%m-%d'))
+    ensure_column('clientes', 'data_fim_trial', 'TEXT')
     # Inserção de admin padrão na tabela clientes
     cursor.execute('''
         INSERT OR IGNORE INTO clientes (nome_assistencia, email, senha, senha_pura, data_cadastro, trial_ativo, data_fim_trial, assinatura_ativa)
