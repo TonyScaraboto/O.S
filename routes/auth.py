@@ -98,50 +98,51 @@ def perfil():
 def login():
     last_user = request.cookies.get('last_user', '')
 
+    import traceback
     if request.method == 'POST':
-        user = request.form['username']
-        pwd = request.form['password']
-        print(f"Tentando login para usuário: {user}")
+        try:
+            user = request.form['username']
+            pwd = request.form['password']
+            print(f"Tentando login para usuário: {user}")
 
-        conn = sqlite3.connect(get_db_path())
-        cursor = conn.cursor()
+            conn = sqlite3.connect(get_db_path())
+            cursor = conn.cursor()
 
-        # Tenta login por username
-        cursor.execute('SELECT password, role FROM usuarios WHERE username=?', (user,))
-        row = cursor.fetchone()
-        print(f"Resultado busca por username: {row}")
-        # Se não encontrar, tenta por email
-        if not row:
-            cursor.execute('SELECT password, role FROM usuarios WHERE username=?', (user.replace('@saas.com',''),))
+            # Tenta login por username
+            cursor.execute('SELECT password, role FROM usuarios WHERE username=?', (user,))
             row = cursor.fetchone()
-            print(f"Resultado busca por email: {row}")
+            print(f"Resultado busca por username: {row}")
+            # Se não encontrar, tenta por email
+            if not row:
+                cursor.execute('SELECT password, role FROM usuarios WHERE username=?', (user.replace('@saas.com',''),))
+                row = cursor.fetchone()
+                print(f"Resultado busca por email: {row}")
 
-        if row:
-            senha_hash = row[0]
-            role = row[1]
-            print(f"Senha hash: {senha_hash}, Role: {role}")
-            # Permite login do admin e tecnico com senha em texto puro
-            if (user == 'admin' and pwd == 'admin123') or (user == 'tecnico' and pwd == 'tecnico123') or (user == 'admin@saas.com' and pwd == 'admin123'):
-                print("Login texto puro permitido")
-                session['user'] = user
-                session['role'] = role
-                cursor.execute('SELECT nome_assistencia, foto_perfil FROM clientes WHERE email=?', (user if '@' in user else user + '@saas.com',))
-                cliente = cursor.fetchone()
-                print(f"Cliente encontrado: {cliente}")
-                if cliente:
-                    session['nome_assistencia'] = cliente[0]
-                    session['foto_perfil'] = cliente[1] if cliente[1] else None
-                conn.close()
-                resp = make_response(redirect(url_for('ordens.dashboard')))
-                resp.set_cookie('last_user', user, max_age=60*60*24*30)
-                return resp
-            # Garante que senha_hash está em bytes
-            if isinstance(senha_hash, str):
-                senha_hash_bytes = senha_hash.encode('utf-8')
-            else:
-                senha_hash_bytes = senha_hash
-            print(f"Senha hash bytes: {senha_hash_bytes}")
-            try:
+            if row:
+                senha_hash = row[0]
+                role = row[1]
+                print(f"Senha hash: {senha_hash}, Role: {role}")
+                # Permite login do admin e tecnico com senha em texto puro
+                if (user == 'admin' and pwd == 'admin123') or (user == 'tecnico' and pwd == 'tecnico123') or (user == 'admin@saas.com' and pwd == 'admin123'):
+                    print("Login texto puro permitido")
+                    session['user'] = user
+                    session['role'] = role
+                    cursor.execute('SELECT nome_assistencia, foto_perfil FROM clientes WHERE email=?', (user if '@' in user else user + '@saas.com',))
+                    cliente = cursor.fetchone()
+                    print(f"Cliente encontrado: {cliente}")
+                    if cliente:
+                        session['nome_assistencia'] = cliente[0]
+                        session['foto_perfil'] = cliente[1] if cliente[1] else None
+                    conn.close()
+                    resp = make_response(redirect(url_for('ordens.dashboard')))
+                    resp.set_cookie('last_user', user, max_age=60*60*24*30)
+                    return resp
+                # Garante que senha_hash está em bytes
+                if isinstance(senha_hash, str):
+                    senha_hash_bytes = senha_hash.encode('utf-8')
+                else:
+                    senha_hash_bytes = senha_hash
+                print(f"Senha hash bytes: {senha_hash_bytes}")
                 if senha_hash and bcrypt.checkpw(pwd.encode('utf-8'), senha_hash_bytes):
                     print("Senha hash válida")
                     # Verifica se assinatura está ativa (liberada)
@@ -162,11 +163,14 @@ def login():
                     resp = make_response(redirect(url_for('ordens.dashboard')))
                     resp.set_cookie('last_user', user, max_age=60*60*24*30)
                     return resp
-            except Exception as e:
-                print(f"Erro ao validar senha hash: {e}")
-        conn.close()
-        print("Login falhou: Usuário ou senha inválidos")
-        return render_template('login.html', error='Usuário ou senha inválidos', current_year=datetime.now().year, last_user=user)
+            conn.close()
+            print("Login falhou: Usuário ou senha inválidos")
+            return render_template('login.html', error='Usuário ou senha inválidos', current_year=datetime.now().year, last_user=user)
+        except Exception as e:
+            with open('error.log', 'a', encoding='utf-8') as f:
+                f.write(f"\n--- Erro login ---\n{traceback.format_exc()}\n")
+            print(f"Erro inesperado no login: {e}")
+            return render_template('login.html', error='Erro interno no login. Consulte o administrador.', current_year=datetime.now().year)
 
     return render_template('login.html', current_year=datetime.now().year, last_user=last_user)
 
