@@ -36,9 +36,34 @@ def cadastro():
         # Criptografa a senha
         senha_hash = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt())
 
+        # Salva cadastro como pendente
+        try:
+            conn = sqlite3.connect(get_db_path())
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO clientes (nome_assistencia, email, senha, senha_pura, data_cadastro, trial_ativo, assinatura_ativa, pix_pagamento)
+                VALUES (?, ?, ?, ?, ?, 1, 0, ?)
+            ''', (
+                nome_assistencia,
+                email,
+                senha_hash.decode('utf-8'),
+                senha,
+                datetime.now().strftime('%Y-%m-%d'),
+                'comicsultimate@gmail.com'
+            ))
+            cursor.execute('''
+                INSERT INTO usuarios (username, password, role)
+                VALUES (?, ?, ?)
+            ''', (email, senha_hash, 'cliente'))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            flash(f'Erro ao salvar cadastro: {e}', 'danger')
+            return render_template('cadastro.html', nome_assistencia=nome_assistencia, email=email)
+
         # Exibe instruções de pagamento Pix simples
         pix_chave = 'comicsultimate@gmail.com'
         valor = 45.00
-        flash(f'Para ativar seu cadastro, faça um Pix de R$ {valor:.2f} para a chave <b>{pix_chave}</b> e envie o comprovante para comicsultimate@gmail.com.', 'info')
+        flash(f'Cadastro salvo! Para ativar, faça um Pix de R$ {valor:.2f} para a chave <b>{pix_chave}</b> e envie o comprovante para comicsultimate@gmail.com. Seu acesso será liberado manualmente.', 'info')
         return render_template('cadastro.html', nome_assistencia=nome_assistencia, email=email, senha=senha, pix_chave=pix_chave, valor=valor)
     return render_template('cadastro.html')

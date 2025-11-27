@@ -5,6 +5,8 @@ import sqlite3
 from models.database import get_db_path
 from datetime import datetime
 import bcrypt
+import tempfile
+import traceback
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -98,7 +100,6 @@ def perfil():
 def login():
     last_user = request.cookies.get('last_user', '')
 
-    import traceback
     if request.method == 'POST':
         try:
             user = request.form['username']
@@ -167,8 +168,12 @@ def login():
             print("Login falhou: Usuário ou senha inválidos")
             return render_template('login.html', error='Usuário ou senha inválidos', current_year=datetime.now().year, last_user=user)
         except Exception as e:
-            with open('error.log', 'a', encoding='utf-8') as f:
-                f.write(f"\n--- Erro login ---\n{traceback.format_exc()}\n")
+            log_path = os.path.join(tempfile.gettempdir(), 'error.log')
+            try:
+                with open(log_path, 'a', encoding='utf-8') as f:
+                    f.write(f"\n--- Erro login ---\n{traceback.format_exc()}\n")
+            except Exception as log_err:
+                print(f"Falha ao gravar log em {log_path}: {log_err}")
             print(f"Erro inesperado no login: {e}")
             return render_template('login.html', error='Erro interno no login. Consulte o administrador.', current_year=datetime.now().year)
 
