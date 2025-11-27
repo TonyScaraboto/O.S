@@ -4,6 +4,7 @@ from routes.ordens import ordens_bp
 from routes.cadastro import cadastro_bp
 from routes.admin import admin_bp
 from routes.assinatura import assinatura_bp
+from api.pdf_api import pdf_api_bp
 import os
 os.environ['ORDENS_DB_PATH'] = '/tmp/ordens.db'
 from models.database import init_db
@@ -22,6 +23,7 @@ app.register_blueprint(ordens_bp)
 app.register_blueprint(cadastro_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(assinatura_bp)
+app.register_blueprint(pdf_api_bp)
 
 # Rota principal para Vercel
 @app.route('/')
