@@ -24,78 +24,80 @@
     </a>
 
     {% if ordens_por_mes|length == 0 %}
-        <div class="alert alert-info mt-4">Nenhuma ordem encontrada.</div>
+    <div class="alert alert-info mt-4">Nenhuma ordem encontrada.</div>
     {% else %}
-        {% for mes, lista in ordens_por_mes.items() %}
-        <h4 class="mt-4">{{ mes }}</h4>
-        <table class="table table-striped table-bordered">
-            <thead class="table-dark">
-                <tr>
-                    <th>Ordem</th>
-                    <th>ID</th>
-                    <th>Cliente</th>
-                    <th>Telefone</th>
-                    <th>Aparelho</th>
-                    <th>Defeito</th>
-                    <th>Valor</th>
-                    <th>Status</th>
-                    <th>Imagem</th>
-                    <th>Data</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if lista|length == 0 %}
-                    <tr><td colspan="11" class="text-center">Nenhuma ordem neste mês.</td></tr>
-                {% else %}
-                    {% for ordem in lista %}
-                    <tr class="os-row">
-                        <td><strong>{{ ordem[3] }} - {{ ordem[1] }}</strong></td>
-                        <td>{{ ordem[0] }}</td>
-                        <td class="os-cliente">{{ ordem[1] }}</td>
-                        <td>{{ ordem[2] }}</td>
-                        <td class="os-aparelho">{{ ordem[3] }}</td>
-                        <td>{{ ordem[4] }}</td>
-                        <td>R$ {{ ordem[5] }}</td>
-                        <td>
-                            <form action="{{ url_for('ordens.atualizar_status', id=ordem[0]) }}" method="post">
-                                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                                    {% for s in ['Recebido', 'Em análise', 'Concluído', 'Entregue'] %}
-                                    <option value="{{ s }}" {% if ordem[6]==s %}selected{% endif %}>{{ s }}</option>
-                                    {% endfor %}
-                                </select>
-                            </form>
-                        </td>
-                        <td>
-                            {% if ordem[7] %}
-                            <img src="{{ url_for('static', filename='imagens/' ~ ordem[7]) }}" width="100">
-                            {% else %}
-                            <span class="text-muted">Sem imagem</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ ordem[8] }}</td>
-                        <td class="d-flex gap-1">
-                            <a href="/pdf_ordem/{{ ordem[0] }}" class="btn btn-sm btn-outline-dark" target="_blank">
-                                <i class="bi bi-file-earmark-pdf"></i> PDF
-                            </a>
-                            <a href="/pdf_ordem_api/{{ ordem[0] }}" class="btn btn-sm btn-success" target="_blank">
-                                <i class="bi bi-download"></i> Baixar PDF
-                            </a>
-                            <a href="/pdf_ordem/{{ ordem[0] }}" class="btn btn-sm btn-primary" target="_blank"
-                                onclick="setTimeout(function(){window.print();},500);return true;">
-                                <i class="bi bi-printer"></i> Imprimir
-                            </a>
-                            <form action="{{ url_for('ordens.excluir_os', id=ordem[0]) }}" method="post"
-                                onsubmit="return confirm('Tem certeza que deseja excluir esta O.S?');" style="display:inline;">
-                                <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% endif %}
-            </tbody>
-        </table>
-        {% endfor %}
+    {% for mes, lista in ordens_por_mes.items() %}
+    <h4 class="mt-4">{{ mes }}</h4>
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Ordem</th>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Telefone</th>
+                <th>Aparelho</th>
+                <th>Defeito</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Imagem</th>
+                <th>Data</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if lista|length == 0 %}
+            <tr>
+                <td colspan="11" class="text-center">Nenhuma ordem neste mês.</td>
+            </tr>
+            {% else %}
+            {% for ordem in lista %}
+            <tr class="os-row">
+                <td><strong>{{ ordem[3] }} - {{ ordem[1] }}</strong></td>
+                <td>{{ ordem[0] }}</td>
+                <td class="os-cliente">{{ ordem[1] }}</td>
+                <td>{{ ordem[2] }}</td>
+                <td class="os-aparelho">{{ ordem[3] }}</td>
+                <td>{{ ordem[4] }}</td>
+                <td>R$ {{ ordem[5] }}</td>
+                <td>
+                    <form action="{{ url_for('ordens.atualizar_status', id=ordem[0]) }}" method="post">
+                        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                            {% for s in ['Recebido', 'Em análise', 'Concluído', 'Entregue'] %}
+                            <option value="{{ s }}" {% if ordem[6]==s %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </td>
+                <td>
+                    {% if ordem[7] %}
+                    <img src="{{ url_for('static', filename='imagens/' ~ ordem[7]) }}" width="100">
+                    {% else %}
+                    <span class="text-muted">Sem imagem</span>
+                    {% endif %}
+                </td>
+                <td>{{ ordem[8] }}</td>
+                <td class="d-flex gap-1">
+                    <a href="/pdf_ordem/{{ ordem[0] }}" class="btn btn-sm btn-outline-dark" target="_blank">
+                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                    </a>
+                    <a href="/pdf_ordem_api/{{ ordem[0] }}" class="btn btn-sm btn-success" target="_blank">
+                        <i class="bi bi-download"></i> Baixar PDF
+                    </a>
+                    <a href="/pdf_ordem/{{ ordem[0] }}" class="btn btn-sm btn-primary" target="_blank"
+                        onclick="setTimeout(function(){window.print();},500);return true;">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </a>
+                    <form action="{{ url_for('ordens.excluir_os', id=ordem[0]) }}" method="post"
+                        onsubmit="return confirm('Tem certeza que deseja excluir esta O.S?');" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+    {% endfor %}
     {% endif %}
 
     <script>
