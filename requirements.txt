@@ -1,3 +1,4 @@
+requests
 blinker==1.9.0
 brotli==1.2.0
 cffi==2.0.0
