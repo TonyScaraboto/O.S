@@ -233,12 +233,20 @@ def listar_ordens():
     ordens_por_mes = {}
     for ordem in todas_ordens:
         # ordem[8] = data_criacao
-        if not ordem or ordem[8] is None:
+        if not ordem or not ordem[8]:
             continue
-        data = ordem[8][:7]  # yyyy-mm
+        try:
+            data = ordem[8][:7]  # yyyy-mm
+        except Exception:
+            data = 'Data inválida'
         if data not in ordens_por_mes:
             ordens_por_mes[data] = []
         ordens_por_mes[data].append(ordem)
+
+    # Garante que pelo menos um mês apareça se não houver ordens
+    if not ordens_por_mes:
+        mes_atual = datetime.now().strftime('%Y-%m')
+        ordens_por_mes[mes_atual] = []
 
     return render_template('ordens.html', ordens_por_mes=ordens_por_mes)
 
