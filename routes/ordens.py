@@ -141,8 +141,8 @@ def nova_ordem():
 
 
     if request.method == 'POST':
-        # O cliente (assistência) é sempre o email do usuário logado
-        cliente = session.get('user')
+        # O nome do cliente é o preenchido no campo do formulário
+        cliente = request.form.get('cliente', '').strip()
         telefone = request.form.get('telefone', '').strip()
         aparelho = request.form.get('aparelho', '').strip()
         defeito = request.form.get('defeito', '').strip()
