@@ -201,9 +201,12 @@ def nova_ordem():
                     (cliente, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao)
                 )
                 conn.commit()
+                # Log para depuração
+                print(f"Ordem criada: cliente={cliente}, aparelho={aparelho}, valor={valor}, data={data_criacao}")
                 conn.close()
                 return redirect(url_for('ordens.listar_ordens'))
             except Exception as e:
+                print(f"Erro ao salvar ordem: {e}")
                 erro = f"Erro ao salvar ordem: {e}"
 
     return render_template('nova_ordem.html', erro=erro)

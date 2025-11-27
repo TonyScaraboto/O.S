@@ -46,7 +46,7 @@ def gerar_pdf_api(id):
             json={
                 'source': source,
                 'landscape': False,
-                'use_print': True
+                'use_print': False
             },
             timeout=30
         )
