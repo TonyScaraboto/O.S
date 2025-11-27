@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from routes.auth import auth_bp
 from routes.ordens import ordens_bp
 from routes.cadastro import cadastro_bp
@@ -26,7 +26,7 @@ app.register_blueprint(assinatura_bp)
 # Rota principal para Vercel
 @app.route('/')
 def home():
-    return 'Sistema rodando!'
+    return render_template('login.html')
 
 @app.cli.command("create-user")
 @click.argument("name")
