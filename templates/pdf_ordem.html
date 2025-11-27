@@ -103,7 +103,7 @@
 
     <div class="campo">
         <span class="label">Valor (R$):</span>
-        {{ ordem[5] }}
+        {{ '%.2f'|format(ordem[5])|replace('.', ',') }}
     </div>
 
 

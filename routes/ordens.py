@@ -200,9 +200,10 @@ def listar_ordens():
 
     ordens_por_mes = {}
     for ordem in todas_ordens:
-        if not ordem or ordem[3] is None:
+        # ordem[8] = data_criacao
+        if not ordem or ordem[8] is None:
             continue
-        data = ordem[3][:7] 
+        data = ordem[8][:7]  # yyyy-mm
         if data not in ordens_por_mes:
             ordens_por_mes[data] = []
         ordens_por_mes[data].append(ordem)
