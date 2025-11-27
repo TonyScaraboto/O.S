@@ -1,11 +1,12 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash
 import sqlite3
+from models.database import get_db_path
 from datetime import datetime
 
 assinatura_bp = Blueprint('assinatura', __name__)
 
 def get_db():
-    return sqlite3.connect('ordens.db')
+    return sqlite3.connect(get_db_path())
 
 @assinatura_bp.route('/assinatura')
 def status_assinatura():

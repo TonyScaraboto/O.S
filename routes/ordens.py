@@ -1,6 +1,7 @@
 
 
 import sqlite3
+from models.database import get_db_path
 """import pdfkit"""
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, send_from_directory, abort, current_app
@@ -15,7 +16,7 @@ def gerar_pdf(id):
     if 'user' not in session:
         return redirect(url_for('auth.login'))
 
-    conn = sqlite3.connect('ordens.db')
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
     ordem = cursor.fetchone()
@@ -45,7 +46,7 @@ def dashboard():
     if bloqueio:
         return bloqueio
 
-    conn = sqlite3.connect('ordens.db')
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
 
     # Buscar dias restantes do trial para o usuário logado
@@ -161,7 +162,7 @@ def nova_ordem():
         else:
             try:
                 valor = float(valor.replace(",", "."))
-                conn = sqlite3.connect('ordens.db')
+                conn = sqlite3.connect(get_db_path())
                 cursor = conn.cursor()
                 cursor.execute(
                     'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -185,7 +186,7 @@ def listar_ordens():
     if bloqueio:
         return bloqueio
 
-    conn = sqlite3.connect('ordens.db')
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     user_email = session.get('user')
     is_admin = session.get('role') == 'admin'
@@ -219,7 +220,7 @@ def faturamento():
         return bloqueio
 
     ano = datetime.now().strftime('%Y')
-    conn = sqlite3.connect('ordens.db')
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     user_email = session.get('user')
     is_admin = session.get('role') == 'admin'
@@ -267,7 +268,7 @@ def listar_acessorios():
     if bloqueio:
         return bloqueio
 
-    conn = sqlite3.connect('ordens.db')
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     user_email = session.get('user')
     # O admin agora só vê suas próprias vendas, igual aos outros usuários
@@ -290,24 +291,54 @@ def salvar_acessorio():
         return bloqueio
 
     nome = request.form.get('nome', '').strip()
-    quantidade = int(request.form.get('quantidade', 0))
-    preco_unitario = float(request.form.get('preco', 0))
+    quantidade_raw = request.form.get('quantidade', '').strip()
+    preco_raw = request.form.get('preco', '').strip()
+    try:
+        quantidade = int(quantidade_raw)
+        preco_unitario = float(preco_raw.replace(',', '.'))
+    except Exception:
+        flash("Quantidade e preço devem ser números válidos.")
+        return redirect(url_for('ordens.listar_acessorios'))
     receita_total = quantidade * preco_unitario
     data_venda = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cliente = session.get('user')
+
+    # Se houver imagem de acessório, salvar corretamente
+    imagem_nome = None
+    if 'foto_acessorio' in request.files:
+        foto = request.files['foto_acessorio']
+        if foto and foto.filename:
+            ext = os.path.splitext(foto.filename)[1]
+            imagem_nome = f"{nome}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
+            pasta_imagens = os.path.join(current_app.root_path, 'static', 'imagens')
+            if not os.path.exists(pasta_imagens):
+                os.makedirs(pasta_imagens)
+            caminho = os.path.join(pasta_imagens, imagem_nome)
+            foto.save(caminho)
 
     if not nome or quantidade <= 0 or preco_unitario <= 0:
         flash("Preencha todos os campos corretamente.")
         return redirect(url_for('ordens.listar_acessorios'))
 
-    conn = sqlite3.connect('ordens.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO acessorios (nome, quantidade, preco_unitario, receita_total, data_venda, cliente)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (nome, quantidade, preco_unitario, receita_total, data_venda, cliente))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(get_db_path())
+        cursor = conn.cursor()
+        # Adiciona imagem se existir
+        if imagem_nome:
+            cursor.execute('''
+                INSERT INTO acessorios (nome, quantidade, preco_unitario, receita_total, data_venda, cliente, imagem)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (nome, quantidade, preco_unitario, receita_total, data_venda, cliente, imagem_nome))
+        else:
+            cursor.execute('''
+                INSERT INTO acessorios (nome, quantidade, preco_unitario, receita_total, data_venda, cliente)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (nome, quantidade, preco_unitario, receita_total, data_venda, cliente))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        flash(f"Erro ao registrar venda: {e}")
+        return redirect(url_for('ordens.listar_acessorios'))
 
     return redirect(url_for('ordens.listar_acessorios'))
 
@@ -321,7 +352,7 @@ def remover_acessorio(id):
     if bloqueio:
         return bloqueio
 
-    conn = sqlite3.connect('ordens.db')
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     user_email = session.get('user')
     is_admin = session.get('role') == 'admin'
@@ -343,7 +374,7 @@ def atualizar_status(id):
     if bloqueio:
         return bloqueio
     novo_status = request.form.get('status', 'Pendente')
-    conn = sqlite3.connect('ordens.db')
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute('UPDATE ordens SET status=? WHERE id=?', (novo_status, id))
     conn.commit()
@@ -384,7 +415,7 @@ def excluir_os(id):
     bloqueio = checar_trial_e_pagamento()
     if bloqueio:
         return bloqueio
-    conn = sqlite3.connect('ordens.db')
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute('DELETE FROM ordens WHERE id=?', (id,))
     conn.commit()

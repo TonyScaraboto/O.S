@@ -2,6 +2,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response
 import sqlite3
+from models.database import get_db_path
 from datetime import datetime
 import bcrypt
 
@@ -21,7 +22,7 @@ def perfil():
     # Buscar data de aquisição e fim do trial do banco
     user_email = session.get('user')
     if user_email:
-        conn = sqlite3.connect('ordens.db')
+        conn = sqlite3.connect(get_db_path())
         cursor = conn.cursor()
         cursor.execute('SELECT data_cadastro, data_fim_trial FROM clientes WHERE email=?', (user_email,))
         row = cursor.fetchone()
@@ -45,7 +46,7 @@ def perfil():
             # Persistir no banco
             user_email = session.get('user')
             if user_email:
-                conn = sqlite3.connect('ordens.db')
+                conn = sqlite3.connect(get_db_path())
                 cursor = conn.cursor()
                 cursor.execute('UPDATE clientes SET nome_assistencia=? WHERE email=?', (novo_nome, user_email))
                 conn.commit()
@@ -61,7 +62,7 @@ def perfil():
             # Persistir no banco
             user_email = session.get('user')
             if user_email:
-                conn = sqlite3.connect('ordens.db')
+                conn = sqlite3.connect(get_db_path())
                 cursor = conn.cursor()
                 cursor.execute('UPDATE clientes SET nome_assistencia=? WHERE email=?', (novo_usuario, user_email))
                 conn.commit()
@@ -83,7 +84,7 @@ def perfil():
             # Persistir no banco
             user_email = session.get('user')
             if user_email:
-                conn = sqlite3.connect('ordens.db')
+                conn = sqlite3.connect(get_db_path())
                 cursor = conn.cursor()
                 cursor.execute('UPDATE clientes SET foto_perfil=? WHERE email=?', (nome_arquivo, user_email))
                 conn.commit()
@@ -102,7 +103,7 @@ def login():
         pwd = request.form['password']
 
 
-        conn = sqlite3.connect('ordens.db')
+        conn = sqlite3.connect(get_db_path())
         cursor = conn.cursor()
         # Busca o hash da senha do usuário
         cursor.execute('SELECT password, role FROM usuarios WHERE username=?', (user,))
@@ -139,7 +140,7 @@ def login():
     return render_template('login.html', current_year=datetime.now().year, last_user=last_user)
 
 # 🚪 Rota de logout
-@auth_bp.route('/logout', methods=['POST'])
+@auth_bp.route('/logout', methods=['GET', 'POST'])
 def logout():
     last_user = session.get('user')
     session.clear()

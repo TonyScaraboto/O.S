@@ -1,6 +1,7 @@
 
 from flask import Blueprint, render_template, session, redirect, url_for, request
 import sqlite3
+from models.database import get_db_path
 from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__)
@@ -25,7 +26,7 @@ def remover_cliente(cliente_id):
     return redirect(url_for('admin.painel_admin'))
 
 def get_db():
-    return sqlite3.connect('ordens.db')
+    return sqlite3.connect(get_db_path())
 
 import bcrypt
 

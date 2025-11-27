@@ -1,12 +1,13 @@
 import sqlite3
 import os
 
-def init_db():
-    # Detecta ambiente Vercel ou local
+def get_db_path():
     if os.environ.get('VERCEL_ENV'):
-        db_path = '/tmp/ordens.db'
-    else:
-        db_path = 'ordens.db'
+        return '/tmp/ordens.db'
+    return 'ordens.db'
+
+def init_db():
+    db_path = get_db_path()
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     # Tabela de clientes (multi-tenant)

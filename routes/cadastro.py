@@ -2,6 +2,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 import sqlite3
+from models.database import get_db_path
 from datetime import datetime
 import bcrypt
 import re
@@ -10,7 +11,7 @@ from utils.email_utils import enviar_email
 cadastro_bp = Blueprint('cadastro', __name__)
 
 def get_db():
-    return sqlite3.connect('ordens.db')
+    return sqlite3.connect(get_db_path())
 
 
 @cadastro_bp.route('/cadastro', methods=['GET', 'POST'])
