@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime
 from flask import session, redirect, url_for, flash
+from models.database import get_db_path
 
 def checar_trial_e_pagamento():
     # Admin nunca é bloqueado
@@ -9,7 +10,7 @@ def checar_trial_e_pagamento():
     email = session.get('user')
     if not email:
         return redirect(url_for('auth.login'))
-    conn = sqlite3.connect('ordens.db')
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute('SELECT data_fim_trial, assinatura_ativa FROM clientes WHERE email=?', (email,))
     row = cursor.fetchone()
