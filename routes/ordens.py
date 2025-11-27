@@ -1,3 +1,34 @@
+# Rota para exibir ordens agrupadas por mês usando o template ordens_por_mes.html
+@ordens_bp.route('/ordens_por_mes')
+def ordens_por_mes():
+    if 'user' not in session:
+        return redirect(url_for('auth.login'))
+    bloqueio = checar_trial_e_pagamento()
+    if bloqueio:
+        return bloqueio
+
+    conn = sqlite3.connect(get_db_path())
+    cursor = conn.cursor()
+    user_email = session.get('user')
+    is_admin = session.get('role') == 'admin'
+    if is_admin:
+        cursor.execute('SELECT * FROM ordens ORDER BY data_criacao DESC')
+        todas_ordens = cursor.fetchall()
+    else:
+        cursor.execute('SELECT * FROM ordens WHERE cliente=? ORDER BY data_criacao DESC', (user_email,))
+        todas_ordens = cursor.fetchall()
+    conn.close()
+
+    ordens_por_mes = {}
+    for ordem in todas_ordens:
+        if not ordem or ordem[8] is None:
+            continue
+        data = ordem[8][:7]  # yyyy-mm
+        if data not in ordens_por_mes:
+            ordens_por_mes[data] = []
+        ordens_por_mes[data].append(ordem)
+
+    return render_template('ordens_por_mes.html', ordens_por_mes=ordens_por_mes)
 
 
 import sqlite3

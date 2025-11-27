@@ -32,29 +32,35 @@ def gerar_pdf_api(id):
 
     html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now())
 
-    # Envia o HTML para a API PDFShift
+    # Permite enviar uma URL como fonte, se passado via query string (?url=...)
+    source_url = request.args.get('url')
+    if source_url:
+        source = source_url
+    else:
+        source = html
+
     try:
         response = requests.post(
             PDFSHIFT_URL,
-            auth=(PDFSHIFT_API_KEY, ''),
+            headers={'X-API-Key': PDFSHIFT_API_KEY},
             json={
-                'source': html,
+                'source': source,
                 'landscape': False,
                 'use_print': True
             },
             timeout=30
         )
-        if response.status_code == 200:
-            pdf_bytes = response.content
-            return send_file(
-                io.BytesIO(pdf_bytes),
-                mimetype='application/pdf',
-                as_attachment=True,
-                download_name=f'ordem_{id}.pdf'
-            )
-        else:
-            flash(f"Erro ao gerar PDF: {response.status_code} - {response.text}", "danger")
-            return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), erro_pdf=response.text)
+        response.raise_for_status()
+        pdf_bytes = response.content
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'ordem_{id}.pdf'
+        )
+    except requests.HTTPError as e:
+        flash(f"Erro ao gerar PDF: {response.status_code} - {response.text}", "danger")
+        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), erro_pdf=response.text)
     except Exception as e:
         flash(f"Falha na comunicação com a API PDFShift: {str(e)}", "danger")
         return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), erro_pdf=str(e))
