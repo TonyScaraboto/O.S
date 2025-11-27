@@ -1,14 +1,13 @@
 
 
 import sqlite3
-import pdfkit
+"""import pdfkit"""
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, send_from_directory, abort, current_app
 from datetime import datetime, timedelta
 from routes.saas_guard import checar_trial_e_pagamento
 
 ordens_bp = Blueprint('ordens', __name__)
-config_pdfkit = pdfkit.configuration(wkhtmltopdf=r'C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe')
 
 # Geração de PDF da ordem
 @ordens_bp.route('/pdf_ordem/<int:id>')
@@ -32,14 +31,9 @@ def gerar_pdf(id):
         foto_nome = os.path.join(current_app.root_path, 'static', 'imagens', ordem[7])
         
         foto_nome = 'file:///' + foto_nome.replace('\\', '/').replace(' ', '%20')
+    # PDF desativado para ambiente serverless
     html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now())
-    options = {'enable-local-file-access': None}
-    pdf = pdfkit.from_string(html, False, configuration=config_pdfkit, options=options)
-
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'inline; filename=ordem_{id}.pdf'
-    return response
+    return html
 
  
 @ordens_bp.route('/dashboard')
