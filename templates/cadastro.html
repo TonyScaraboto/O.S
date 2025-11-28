@@ -33,13 +33,19 @@
             background: linear-gradient(120deg, #0a1833 60%, #1a1a2e 100%);
             color: #fff;
             font-family: 'Share Tech Mono', 'Orbitron', 'Segoe UI', monospace;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         .login-container {
             background: rgba(20, 30, 50, 0.92);
             box-shadow: 0 0 32px 4px #00bfff33, 0 0 0 1px #1e90ff44;
             border: 1.5px solid #1e90ff44;
+            width: min(960px, 95vw);
+            margin: clamp(20px, 4vh, 48px) auto;
+            max-height: calc(100vh - clamp(40px, 10vh, 120px));
+            overflow-y: auto;
+            padding: clamp(20px, 3vw, 40px);
         }
 
         .login-container h2 {
@@ -211,6 +217,37 @@
         @keyframes rain-fall {
             to {
                 top: 110vh;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .plan-grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                overflow-y: auto;
+            }
+
+            .login-container {
+                max-height: none;
+                margin: 1rem;
+                width: auto;
+            }
+
+            .plan-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .qr-flex {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .qr-image {
+                margin: 0 auto;
             }
         }
     </style>
