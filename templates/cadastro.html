@@ -12,7 +12,7 @@
     <script src="{{ url_for('static', filename='js/neon.js') }}" defer></script>
 </head>
 
-<body style="min-height:100vh; margin:0; padding:0; overflow:hidden; background: #0a1833; position:relative;">
+<body style="min-height:100vh; margin:0; padding:0; overflow-y:auto; overflow-x:hidden; background: #0a1833; position:relative;">
     <!-- Fundo tecnológico com linhas azuis -->
     <svg id="br-linhas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0;"
         viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -39,11 +39,12 @@
 
         .login-container {
             background: rgba(20, 30, 50, 0.92);
-            box-shadow: 0 0 32px 4px #00bfff33, 0 0 0 1px #1e90ff44;
-            border: 1.5px solid #1e90ff44;
-            width: min(960px, 95vw);
-            margin: clamp(20px, 4vh, 48px) auto;
-            max-height: calc(100vh - clamp(40px, 10vh, 120px));
+            box-shadow: 0 0 28px 2px #00bfff33, 0 0 0 1px #00bfff22;
+            border: 1px solid rgba(0, 191, 255, 0.5);
+            border-radius: 18px;
+            width: min(840px, 92vw);
+            margin: clamp(16px, 5vh, 56px) auto;
+            max-height: calc(100vh - clamp(48px, 12vh, 128px));
             overflow-y: auto;
             padding: clamp(20px, 3vw, 40px);
         }
