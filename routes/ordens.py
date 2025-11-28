@@ -429,6 +429,10 @@ def remover_acessorio(id):
         cursor.execute('DELETE FROM acessorios WHERE id = ?', (id,))
     else:
         cursor.execute('DELETE FROM acessorios WHERE id = ? AND cliente = ?', (id, user_email))
+        if cursor.rowcount == 0:
+            flash('Não foi possível remover este acessório.', 'warning')
+            conn.close()
+            return redirect(url_for('ordens.listar_acessorios'))
     conn.commit()
     conn.close()
 
@@ -486,7 +490,22 @@ def excluir_os(id):
         return bloqueio
     conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM ordens WHERE id=?', (id,))
+    user_email = session.get('user')
+    is_admin = session.get('role') == 'admin'
+    if is_admin:
+        cursor.execute('DELETE FROM ordens WHERE id=?', (id,))
+    else:
+        cursor.execute('DELETE FROM ordens WHERE id=? AND cliente=?', (id, user_email))
+        if cursor.rowcount == 0:
+            # Compatibilidade com registros antigos onde "cliente" guarda o nome
+            cursor.execute('SELECT cliente FROM ordens WHERE id=?', (id,))
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                flash('Você não tem permissão para excluir esta ordem.', 'warning')
+            else:
+                flash('Ordem não encontrada.', 'warning')
+            return redirect(url_for('ordens.listar_ordens'))
     conn.commit()
     conn.close()
     return redirect(url_for('ordens.listar_ordens'))
