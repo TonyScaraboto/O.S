@@ -107,4 +107,3 @@ def create_charge(*, valor: float, plano: str, nome_cliente: str, email_cliente:
         'qr_copia_cola': qr_text,
         'raw_response': data,
     }
-*** End Patch
