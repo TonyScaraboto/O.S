@@ -4,102 +4,160 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}Sistema de Ordens{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Bootstrap CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
 
-    <link rel="icon" type="image/svg+xml"
-        href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Ccircle%20fill%3D%27%230b1a33%27%20cx%3D%2732%27%20cy%3D%2732%27%20r%3D%2732%27/%3E%3Cpath%20fill%3D%27none%27%20stroke%3D%27%2300bfff%27%20stroke-width%3D%276%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20d%3D%27M16%2036l10%2010%2022-28%27/%3E%3Ccircle%20fill%3D%27%231e90ff%27%20cx%3D%2732%27%20cy%3D%2724%27%20r%3D%276%27/%3E%3C/svg%3E">
-
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-        body {
-            background-color: #1c1c1c;
-            color: #fff;
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 220px;
-            background-color: #111;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .sidebar nav {
-            padding-top: 60px;
-        }
-
-        .sidebar a {
-            display: block;
-            color: #ccc;
-            padding: 15px;
-            text-decoration: none;
-        }
-
-        .sidebar a:hover {
-            background-color: #333;
-            color: #fff;
-        }
-
-        .logout {
-            padding: 20px;
-            text-align: center;
-        }
-
-        .content {
-            margin-left: 240px;
-            padding: 30px;
-        }
-    </style>
 </head>
 
-<body>
+<body class="app-shell">
+    <div class="app-noise"></div>
+    <div class="app-container">
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">OS</div>
+                <div class="brand-text">
+                    <span class="brand-eyebrow">Assistência</span>
+                    <strong>{{ session.get('nome_assistencia', 'Ordem de Serviço') }}</strong>
+                </div>
+            </div>
 
-    <!-- Menu lateral -->
-    <div class="sidebar">
+            <nav class="sidebar-menu">
+                <a href="{{ url_for('auth.perfil') }}">
+                    <i class="bi bi-person-badge"></i>
+                    <span>Perfil</span>
+                </a>
+                <a href="{{ url_for('ordens.dashboard') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Painel do Usuário</span>
+                </a>
+                <a href="{{ url_for('ordens.nova_ordem') }}">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Nova Ordem</span>
+                </a>
+                <a href="{{ url_for('ordens.listar_ordens') }}">
+                    <i class="bi bi-list-check"></i>
+                    <span>Ordens por Mês</span>
+                </a>
+                <a href="{{ url_for('ordens.faturamento') }}">
+                    <i class="bi bi-bar-chart-line"></i>
+                    <span>Faturamento Anual</span>
+                </a>
+                <a href="{{ url_for('ordens.listar_acessorios') }}">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Acessórios</span>
+                </a>
+                {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('admin.painel_admin') }}" class="admin-link">
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Painel do Administrador</span>
+                </a>
+                {% endif %}
+            </nav>
 
-        <nav>
-            <a href="{{ url_for('auth.perfil') }}" class="btn btn-primary w-100 mb-2" style="margin-bottom: 10px;">
-                <i class="bi bi-person-badge"></i> Perfil
-            </a>
-            <a href="{{ url_for('ordens.dashboard') }}"><i class="bi bi-person-circle"></i> Painel do Usuário</a>
-            <a href="{{ url_for('ordens.nova_ordem') }}"><i class="bi bi-plus-circle"></i> Nova Ordem</a>
-            <a href="{{ url_for('ordens.listar_ordens') }}"><i class="bi bi-list-check"></i> Ordens por Mês</a>
-            <a href="{{ url_for('ordens.faturamento') }}"><i class="bi bi-bar-chart-line-fill"></i> Faturamento
-                Anual</a>
-            <a href="{{ url_for('ordens.listar_acessorios') }}"><i class="bi bi-box-seam"></i> Acessórios</a>
-            {% if session.get('role') == 'admin' %}
-            <a href="{{ url_for('admin.painel_admin') }}" class="btn btn-warning w-100 mt-2">
-                <i class="bi bi-shield-lock"></i> Painel do Administrador
-            </a>
-            {% endif %}
-        </nav>
-        <!-- Botão de sair -->
-        <div class="logout" style="padding-top: 0; padding-bottom: 12px;">
-            <form action="{{ url_for('auth.logout') }}" method="post">
-                <button type="submit" class="btn btn-danger w-100">
-                    <i class="bi bi-box-arrow-right"></i> Sair da Conta
+            <div class="sidebar-footer">
+                <form action="{{ url_for('auth.logout') }}" method="post">
+                    <button type="submit">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Sair da Conta</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <div class="app-main">
+            <header class="app-topbar">
+                {% block topbar %}
+                <div class="topbar-info">
+                    <p class="topbar-eyebrow">Sistema Ordem de Serviço</p>
+                    <h1 class="topbar-title">{% block page_title %}Painel Operacional{% endblock %}</h1>
+                </div>
+                {% endblock %}
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Minimizar menu lateral">
+                    <span></span>
+                    <span></span>
+                    <span></span>
                 </button>
-            </form>
+            </header>
+
+            <main class="app-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="alert-stack">
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message|safe }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
         </div>
     </div>
 
-    <!-- Conteúdo principal -->
-    <div class="content">
-        {% block content %}{% endblock %}
-    </div>
+    <script>
+        (function () {
+            const body = document.body;
+            const toggle = document.getElementById('sidebarToggle');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const links = document.querySelectorAll('.sidebar-menu a');
+            const mediaQuery = window.matchMedia('(max-width: 992px)');
 
-    <!-- Bootstrap JS -->
+            const storedState = localStorage.getItem('sidebar-collapsed');
+            if (storedState === '1' && !mediaQuery.matches) {
+                body.classList.add('sidebar-collapsed');
+            }
+
+            function closeMobileSidebar() {
+                body.classList.remove('sidebar-open');
+            }
+
+            toggle?.addEventListener('click', () => {
+                if (mediaQuery.matches) {
+                    body.classList.toggle('sidebar-open');
+                } else {
+                    body.classList.toggle('sidebar-collapsed');
+                    localStorage.setItem('sidebar-collapsed', body.classList.contains('sidebar-collapsed') ? '1' : '0');
+                }
+            });
+
+            backdrop?.addEventListener('click', closeMobileSidebar);
+            links.forEach(link => link.addEventListener('click', closeMobileSidebar));
+
+            const mqHandler = (event) => {
+                if (!event.matches) {
+                    body.classList.remove('sidebar-open');
+                    const saved = localStorage.getItem('sidebar-collapsed');
+                    if (saved === '1') {
+                        body.classList.add('sidebar-collapsed');
+                    }
+                }
+            };
+
+            if (mediaQuery.addEventListener) {
+                mediaQuery.addEventListener('change', mqHandler);
+            } else if (mediaQuery.addListener) {
+                mediaQuery.addListener(mqHandler);
+            }
+        })();
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
