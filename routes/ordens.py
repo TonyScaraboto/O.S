@@ -2,6 +2,7 @@ import sqlite3
 from models.database import get_db_path
 """import pdfkit"""
 import os
+from functools import lru_cache
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, send_from_directory, abort, current_app
 from datetime import datetime, timedelta
 from routes.saas_guard import checar_trial_e_pagamento
@@ -155,8 +156,20 @@ def dashboard():
     )
 
 # Cadastro de nova ordem
-@ordens_bp.route('/nova_ordem', methods=['GET', 'POST'])
+@lru_cache(maxsize=1)
+def _ordens_tem_nome_cliente():
+    try:
+        conn = sqlite3.connect(get_db_path())
+        cursor = conn.cursor()
+        cursor.execute('PRAGMA table_info(ordens)')
+        colunas = [row[1] for row in cursor.fetchall()]
+        conn.close()
+        return 'nome_cliente' in colunas
+    except Exception:
+        return False
 
+
+@ordens_bp.route('/nova_ordem', methods=['GET', 'POST'])
 def nova_ordem():
     if 'user' not in session:
         return redirect(url_for('auth.login'))
@@ -195,17 +208,23 @@ def nova_ordem():
                     flash('Não foi possível salvar a foto no ambiente atual. A ordem será registrada sem imagem.', 'warning')
                     imagem_nome = None
 
-        if not nome_cliente or not telefone or not aparelho or not defeito or not valor:
+        if not nome_cliente or not telefone or not aparelho or not defeito or not valor or not dono_email:
             erro = "Preencha todos os campos obrigatórios."
         else:
             try:
                 valor = float(valor.replace(",", "."))
                 conn = sqlite3.connect(get_db_path())
                 cursor = conn.cursor()
-                cursor.execute(
-                    'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao, nome_cliente) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (dono_email, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao, nome_cliente)
-                )
+                if _ordens_tem_nome_cliente():
+                    cursor.execute(
+                        'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao, nome_cliente) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (dono_email, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao, nome_cliente)
+                    )
+                else:
+                    cursor.execute(
+                        'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                        (nome_cliente, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao)
+                    )
                 conn.commit()
                 # Log para depuração
                 print(f"Ordem criada: assistencia={dono_email}, cliente_final={nome_cliente}, aparelho={aparelho}, valor={valor}, data={data_criacao}")
