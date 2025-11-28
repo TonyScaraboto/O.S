@@ -381,13 +381,21 @@ def salvar_acessorio():
     if 'foto_acessorio' in request.files:
         foto = request.files['foto_acessorio']
         if foto and foto.filename:
-            ext = os.path.splitext(foto.filename)[1]
-            imagem_nome = f"{nome}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
-            pasta_imagens = os.path.join(current_app.root_path, 'static', 'imagens')
-            if not os.path.exists(pasta_imagens):
-                os.makedirs(pasta_imagens)
-            caminho = os.path.join(pasta_imagens, imagem_nome)
-            foto.save(caminho)
+            if os.environ.get('VERCEL_ENV'):
+                flash('O upload de fotos de acessórios não é suportado no ambiente atual.', 'warning')
+                imagem_nome = None
+            else:
+                ext = os.path.splitext(foto.filename)[1]
+                imagem_nome = f"{nome}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
+                pasta_imagens = os.path.join(current_app.root_path, 'static', 'imagens')
+                try:
+                    os.makedirs(pasta_imagens, exist_ok=True)
+                    caminho = os.path.join(pasta_imagens, imagem_nome)
+                    foto.save(caminho)
+                except OSError as exc:
+                    current_app.logger.warning('Não foi possível salvar a imagem do acessório: %s', exc)
+                    flash('Não foi possível salvar a imagem do acessório no ambiente atual.', 'warning')
+                    imagem_nome = None
 
     if not nome or quantidade <= 0 or preco_unitario <= 0:
         flash("Preencha todos os campos corretamente.")
