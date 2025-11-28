@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Ccircle%20fill%3D%27%230b1a33%27%20cx%3D%2732%27%20cy%3D%2732%27%20r%3D%2732%27/%3E%3Cpath%20fill%3D%27none%27%20stroke%3D%27%2300bfff%27%20stroke-width%3D%276%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20d%3D%27M16%2036l10%2010%2022-28%27/%3E%3Ccircle%20fill%3D%27%231e90ff%27%20cx%3D%2732%27%20cy%3D%2724%27%20r%3D%276%27/%3E%3C/svg%3E">
+    <script src="{{ url_for('static', filename='js/neon.js') }}" defer></script>
 </head>
 
 <body style="min-height:100vh; margin:0; padding:0; overflow:hidden; background: #0a1833; position:relative;">
@@ -26,35 +27,6 @@
         <line class="br-linha" x1="1400" y1="0" x2="1600" y2="1080" stroke="#00bfff" stroke-width="2" opacity="0.10" />
     </svg>
 
-    <!-- Blade Runner light effect on SVG lines -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Neon lines
-            const lines = document.querySelectorAll('.br-linha');
-            lines.forEach((line, idx) => {
-                setInterval(() => {
-                    let totalLength = line.getTotalLength();
-                    let dash = 180 + 40 * Math.sin(Date.now() / 400 + idx);
-                    let offset = (Date.now() / 6 + idx * 200) % totalLength;
-                    line.setAttribute('stroke-dasharray', `${dash},${totalLength}`);
-                    line.setAttribute('stroke-dashoffset', offset);
-                }, 30 + idx * 7);
-            });
-
-            // Neon rain effect
-            const rainContainer = document.createElement('div');
-            rainContainer.className = 'neon-rain';
-            document.body.appendChild(rainContainer);
-            for (let i = 0; i < 80; i++) {
-                let drop = document.createElement('div');
-                drop.className = 'rain-drop';
-                drop.style.left = Math.random() * 100 + 'vw';
-                drop.style.animationDelay = (Math.random() * 3) + 's';
-                drop.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
-                rainContainer.appendChild(drop);
-            }
-        });
-    </script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Share+Tech+Mono&display=swap"
         rel="stylesheet">
     <style>
