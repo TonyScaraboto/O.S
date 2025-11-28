@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260">
+  <rect width="260" height="260" rx="16" ry="16" fill="#0a1833" stroke="#1e90ff" stroke-width="6" />
+  <rect x="28" y="28" width="48" height="48" fill="#0a1833" stroke="#00bfff" stroke-width="6" />
+  <rect x="184" y="28" width="48" height="48" fill="#0a1833" stroke="#00bfff" stroke-width="6" />
+  <rect x="28" y="184" width="48" height="48" fill="#0a1833" stroke="#00bfff" stroke-width="6" />
+  <rect x="112" y="112" width="36" height="36" fill="#1e90ff" />
+  <path d="M80 40h32v32H80zM148 40h32v32h-32zM40 148h32v32H40zM188 148h32v32h-32z" fill="#1e90ff" opacity="0.4" />
+  <text x="50%" y="210" font-size="20" font-family="'Share Tech Mono', monospace" fill="#00bfff" text-anchor="middle">QR em processamento</text>
+</svg>

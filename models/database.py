@@ -43,6 +43,11 @@ def init_db():
     ensure_column('clientes', 'trial_ativo', 'INTEGER DEFAULT 1', 1)
     ensure_column('clientes', 'data_cadastro', 'TEXT', datetime.now().strftime('%Y-%m-%d'))
     ensure_column('clientes', 'data_fim_trial', 'TEXT')
+    ensure_column('clientes', 'plano_nome', 'TEXT')
+    ensure_column('clientes', 'plano_valor', 'REAL')
+    ensure_column('clientes', 'wooxy_charge_id', 'TEXT')
+    ensure_column('clientes', 'wooxy_qr_code', 'TEXT')
+    ensure_column('clientes', 'wooxy_copia_cola', 'TEXT')
     # Inserção de admin padrão na tabela clientes
     cursor.execute('''
         INSERT OR IGNORE INTO clientes (nome_assistencia, email, senha, senha_pura, data_cadastro, trial_ativo, data_fim_trial, assinatura_ativa)
