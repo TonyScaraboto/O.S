@@ -196,17 +196,21 @@ def nova_ordem():
         if 'foto_ordem' in request.files:
             foto = request.files['foto_ordem']
             if foto and foto.filename:
-                ext = os.path.splitext(foto.filename)[1]
-                imagem_nome = f"{aparelho}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
-                pasta_imagens = os.path.join(current_app.root_path, 'static', 'imagens')
-                try:
-                    os.makedirs(pasta_imagens, exist_ok=True)
-                    caminho = os.path.join(pasta_imagens, imagem_nome)
-                    foto.save(caminho)
-                except OSError as exc:
-                    current_app.logger.warning('Não foi possível salvar a imagem da ordem: %s', exc)
-                    flash('Não foi possível salvar a foto no ambiente atual. A ordem será registrada sem imagem.', 'warning')
+                if os.environ.get('VERCEL_ENV'):
+                    flash('O upload de fotos não é suportado no ambiente atual. A ordem foi registrada sem imagem.', 'warning')
                     imagem_nome = None
+                else:
+                    ext = os.path.splitext(foto.filename)[1]
+                    imagem_nome = f"{aparelho}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
+                    pasta_imagens = os.path.join(current_app.root_path, 'static', 'imagens')
+                    try:
+                        os.makedirs(pasta_imagens, exist_ok=True)
+                        caminho = os.path.join(pasta_imagens, imagem_nome)
+                        foto.save(caminho)
+                    except OSError as exc:
+                        current_app.logger.warning('Não foi possível salvar a imagem da ordem: %s', exc)
+                        flash('Não foi possível salvar a foto no ambiente atual. A ordem será registrada sem imagem.', 'warning')
+                        imagem_nome = None
 
         if not nome_cliente or not telefone or not aparelho or not defeito or not valor or not dono_email:
             erro = "Preencha todos os campos obrigatórios."
