@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from routes.auth import auth_bp
 from routes.ordens import ordens_bp
 from routes.cadastro import cadastro_bp
@@ -30,4 +30,10 @@ app.register_blueprint(pdf_api_bp)
 @app.route('/')
 def home():
     return render_template('login.html')
+
+
+@app.route('/favicon.ico')
+def favicon():
+    static_dir = os.path.join(app.root_path, 'static')
+    return send_from_directory(static_dir, 'favicon.svg', mimetype='image/svg+xml')
 
