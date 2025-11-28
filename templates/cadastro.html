@@ -237,12 +237,14 @@
                     {% for plano in planos %}
                     {% set selecionado = plano.id == plano_escolhido or (not plano_escolhido and loop.first) %}
                     <label class="plan-card {% if selecionado %}active{% endif %}">
-                        <input type="radio" name="plano" value="{{ plano.id }}" {% if selecionado %}checked{% endif %} required>
+                        <input type="radio" name="plano" value="{{ plano.id }}" {% if selecionado %}checked{% endif %}
+                            required>
                         <div class="plan-badge">{{ plano.badge }}</div>
                         <h3>{{ plano.titulo }}</h3>
                         <p>{{ plano.descricao }}</p>
                         <div class="plan-price">R$ {{ '%.2f'|format(plano.valor) }}</div>
-                        <span class="plan-duration">{% if plano.id == 'mensal' %}30 dias{% elif plano.id == 'trimestral' %}90 dias{% else %}12 meses{% endif %}</span>
+                        <span class="plan-duration">{% if plano.id == 'mensal' %}30 dias{% elif plano.id == 'trimestral'
+                            %}90 dias{% else %}12 meses{% endif %}</span>
                     </label>
                     {% endfor %}
                 </div>
@@ -251,7 +253,8 @@
                 <label for="nome_assistencia" class="form-label">Nome da Assistência</label>
                 <input type="text" class="form-control" id="nome_assistencia" name="nome_assistencia"
                     value="{{ nome_assistencia|default('') }}" required autocomplete="organization">
-                <small class="text-muted">Os planos acima já estão disponíveis. Basta escolher um e preencher seus dados.</small>
+                <small class="text-muted">Os planos acima já estão disponíveis. Basta escolher um e preencher seus
+                    dados.</small>
             </div>
             <div class="mb-3">
                 <label for="email" class="form-label">E-mail</label>
@@ -260,8 +263,8 @@
             </div>
             <div class="mb-3">
                 <label for="senha" class="form-label">Senha</label>
-                <input type="password" class="form-control" id="senha" name="senha"
-                    value="{{ senha|default('') }}" required>
+                <input type="password" class="form-control" id="senha" name="senha" value="{{ senha|default('') }}"
+                    required>
             </div>
             <button type="submit" class="btn btn-primary w-100">Gerar QR Code Pix</button>
         </form>
@@ -278,7 +281,8 @@
                     <button class="btn btn-outline-primary w-100" id="btnCopiar" type="button">Copiar código</button>
                 </div>
             </div>
-            <small class="text-muted">Assim que o pagamento for confirmado pela Wooxy, liberaremos seu login automaticamente.</small>
+            <small class="text-muted">Assim que o pagamento for confirmado pela Wooxy, liberaremos seu login
+                automaticamente.</small>
         </div>
         {% endif %}
 
@@ -286,42 +290,42 @@
             <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary w-100">Voltar para o login</a>
         </div>
     </div>
-<script>
-    const form = document.getElementById('cadastroForm');
-    const planRadios = document.querySelectorAll('.plan-card input[type="radio"]');
-    const copiarBtn = document.getElementById('btnCopiar');
+    <script>
+        const form = document.getElementById('cadastroForm');
+        const planRadios = document.querySelectorAll('.plan-card input[type="radio"]');
+        const copiarBtn = document.getElementById('btnCopiar');
 
-    planRadios.forEach((radio) => {
-        radio.addEventListener('change', () => {
-            document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('active'));
-            radio.closest('.plan-card').classList.add('active');
-            if (form) {
-                if (form.checkValidity()) {
-                    if (form.requestSubmit) {
-                        form.requestSubmit();
+        planRadios.forEach((radio) => {
+            radio.addEventListener('change', () => {
+                document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('active'));
+                radio.closest('.plan-card').classList.add('active');
+                if (form) {
+                    if (form.checkValidity()) {
+                        if (form.requestSubmit) {
+                            form.requestSubmit();
+                        } else {
+                            form.submit();
+                        }
                     } else {
-                        form.submit();
+                        form.reportValidity();
                     }
-                } else {
-                    form.reportValidity();
                 }
-            }
+            });
         });
-    });
 
-    if (copiarBtn) {
-        copiarBtn.addEventListener('click', async () => {
-            const payload = document.getElementById('qrPayload').innerText.trim();
-            try {
-                await navigator.clipboard.writeText(payload);
-                copiarBtn.innerText = 'Copiado!';
-                setTimeout(() => copiarBtn.innerText = 'Copiar código', 1500);
-            } catch (err) {
-                copiarBtn.innerText = 'Erro ao copiar';
-            }
-        });
-    }
-</script>
+        if (copiarBtn) {
+            copiarBtn.addEventListener('click', async () => {
+                const payload = document.getElementById('qrPayload').innerText.trim();
+                try {
+                    await navigator.clipboard.writeText(payload);
+                    copiarBtn.innerText = 'Copiado!';
+                    setTimeout(() => copiarBtn.innerText = 'Copiar código', 1500);
+                } catch (err) {
+                    copiarBtn.innerText = 'Erro ao copiar';
+                }
+            });
+        }
+    </script>
 </body>
 
 </html>

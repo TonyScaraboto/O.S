@@ -35,5 +35,8 @@ def home():
 @app.route('/favicon.ico')
 def favicon():
     static_dir = os.path.join(app.root_path, 'static')
+    ico_file = os.path.join(static_dir, 'favicon.ico')
+    if os.path.exists(ico_file):
+        return send_from_directory(static_dir, 'favicon.ico', mimetype='image/x-icon')
     return send_from_directory(static_dir, 'favicon.svg', mimetype='image/svg+xml')
 
