@@ -10,84 +10,97 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
 </head>
 
-<body style="min-height:100vh; margin:0; padding:0; overflow:hidden; background: #0a1833; position:relative;">
-    <!-- Mensagens flash do Flask -->
-    <div class="container mt-3" style="max-width: 500px;">
+<body style="min-height:100vh; margin:0; padding:0; overflow:hidden; background:#0a1833; position:relative;">
+    <svg id="br-linhas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0;" viewBox="0 0 1920 1080"
+        fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line class="br-linha" x1="0" y1="100" x2="1920" y2="200" stroke="#1e90ff" stroke-width="2" opacity="0.2" />
+        <line class="br-linha" x1="0" y1="300" x2="1920" y2="400" stroke="#00bfff" stroke-width="2" opacity="0.18" />
+        <line class="br-linha" x1="0" y1="500" x2="1920" y2="600" stroke="#1e90ff" stroke-width="2" opacity="0.15" />
+        <line class="br-linha" x1="0" y1="700" x2="1920" y2="800" stroke="#00bfff" stroke-width="2" opacity="0.13" />
+        <line class="br-linha" x1="0" y1="900" x2="1920" y2="1000" stroke="#1e90ff" stroke-width="2" opacity="0.11" />
+        <line class="br-linha" x1="200" y1="0" x2="400" y2="1080" stroke="#00bfff" stroke-width="2" opacity="0.10" />
+        <line class="br-linha" x1="800" y1="0" x2="1000" y2="1080" stroke="#1e90ff" stroke-width="2" opacity="0.10" />
+        <line class="br-linha" x1="1400" y1="0" x2="1600" y2="1080" stroke="#00bfff" stroke-width="2" opacity="0.10" />
+    </svg>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const lines = document.querySelectorAll('.br-linha');
+            lines.forEach((line, idx) => {
+                setInterval(() => {
+                    let totalLength = line.getTotalLength();
+                    let dash = 180 + 40 * Math.sin(Date.now() / 400 + idx);
+                    let offset = (Date.now() / 6 + idx * 200) % totalLength;
+                    line.setAttribute('stroke-dasharray', `${dash},${totalLength}`);
+                    line.setAttribute('stroke-dashoffset', offset);
+                }, 30 + idx * 7);
+            });
+
+            const rainContainer = document.createElement('div');
+            rainContainer.className = 'neon-rain';
+            document.body.appendChild(rainContainer);
+            for (let i = 0; i < 80; i++) {
+                let drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = Math.random() * 100 + 'vw';
+                drop.style.animationDelay = (Math.random() * 3) + 's';
+                drop.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+                rainContainer.appendChild(drop);
+            }
+        });
+    </script>
+
+    <div class="container mt-3" style="max-width:500px; z-index:3; position:relative;">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         {% for category, message in messages %}
         <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
+            {{ message|safe }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         {% endfor %}
         {% endif %}
         {% endwith %}
     </div>
-    <!-- Fundo tecnológico com linhas azuis -->
-    <svg style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0;" viewBox="0 0 1920 1080"
-        fill="none" xmlns="http://www.w3.org/2000/svg">
-        <line x1="0" y1="100" x2="1920" y2="200" stroke="#1e90ff" stroke-width="2" opacity="0.2" />
-        <line x1="0" y1="300" x2="1920" y2="400" stroke="#00bfff" stroke-width="2" opacity="0.18" />
-        <line x1="0" y1="500" x2="1920" y2="600" stroke="#1e90ff" stroke-width="2" opacity="0.15" />
-        <line x1="0" y1="700" x2="1920" y2="800" stroke="#00bfff" stroke-width="2" opacity="0.13" />
-        <line x1="0" y1="900" x2="1920" y2="1000" stroke="#1e90ff" stroke-width="2" opacity="0.11" />
-        <line x1="200" y1="0" x2="400" y2="1080" stroke="#00bfff" stroke-width="2" opacity="0.10" />
-        <line x1="800" y1="0" x2="1000" y2="1080" stroke="#1e90ff" stroke-width="2" opacity="0.10" />
-        <line x1="1400" y1="0" x2="1600" y2="1080" stroke="#00bfff" stroke-width="2" opacity="0.10" />
-    </svg>
 
-    <div class="container mt-5" style="max-width: 400px; position:relative; z-index:1;">
-        <div class="card bg-dark text-white shadow">
-            <div class="card-header text-center">
-                <h4>Cadastro da Assistência</h4>
+    <div class="login-container" style="position:relative; z-index:3;">
+        <h2>Cadastro da Assistência</h2>
+        <form method="post">
+            <div class="mb-3">
+                <label for="nome_assistencia" class="form-label">Nome da Assistência</label>
+                <input type="text" class="form-control" id="nome_assistencia" name="nome_assistencia"
+                    value="{{ nome_assistencia|default('') }}" required {% if pix_chave %}readonly{% endif %}>
             </div>
-            <div class="card-body">
-                <form method="post">
-                    <div class="mb-3">
-                        <label for="nome_assistencia" class="form-label">Nome da Assistência</label>
-                        <input type="text" class="form-control" id="nome_assistencia" name="nome_assistencia"
-                            value="{{ nome_assistencia|default('') }}" required {% if qr_code %}readonly{% endif %}>
-                    </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">E-mail</label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ email|default('') }}"
-                            required {% if qr_code %}readonly{% endif %}>
-                    </div>
-                    <div class="mb-3">
-                        <label for="senha" class="form-label">Senha</label>
-                        <input type="password" class="form-control" id="senha" name="senha"
-                            value="{{ senha|default('') }}" required {% if qr_code %}readonly{% endif %}>
-                    </div>
-                    {% if pix_chave %}
-                    <div class="alert alert-info text-dark text-center">
-                        <b>Pagamento obrigatório:</b> Para ativar seu cadastro, faça um Pix de <b>R$ {{ valor }}</b>
-                        para a chave:<br>
-                        <span style="font-size:1.2em; color:#1e90ff"><b>{{ pix_chave }}</b></span><br>
-                        <br>
-                        Após o pagamento, envie o comprovante para <b>comicsultimate@gmail.com</b>.<br>
-                        Seu cadastro será liberado manualmente.
-                    </div>
-                    {% else %}
-                    <div class="alert alert-info text-dark">
-                        <b>Pagamento obrigatório:</b> Para ativar o cadastro, realize o pagamento de <b>R$ 45,00</b> via
-                        Pix.<br>
-                        As instruções aparecerão após preencher os dados e clicar em cadastrar.
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">Cadastrar e ver instruções Pix</button>
-                    {% endif %}
-                </form>
-                <div class="text-center mt-3">
-                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary w-100">Voltar para o login</a>
-                </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">E-mail</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ email|default('') }}"
+                    required {% if pix_chave %}readonly{% endif %}>
             </div>
+            <div class="mb-3">
+                <label for="senha" class="form-label">Senha</label>
+                <input type="password" class="form-control" id="senha" name="senha"
+                    value="{{ senha|default('') }}" required {% if pix_chave %}readonly{% endif %}>
+            </div>
+
+            {% if pix_chave %}
+            <div class="alert alert-info text-dark text-center">
+                <b>Pagamento obrigatório:</b> Para ativar seu cadastro, faça um Pix de <b>R$ {{ valor }}</b> para a chave:<br>
+                <span style="font-size:1.2em; color:#1e90ff"><b>{{ pix_chave }}</b></span><br><br>
+                Após o pagamento, envie o comprovante para <b>comicsultimate@gmail.com</b>.<br>
+                Seu cadastro será liberado manualmente.
+            </div>
+            {% else %}
+            <div class="alert alert-info text-dark">
+                <b>Pagamento obrigatório:</b> Para ativar o cadastro, realize o pagamento de <b>R$ 45,00</b> via Pix.<br>
+                As instruções aparecerão após preencher os dados e clicar em cadastrar.
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Cadastrar e ver instruções Pix</button>
+            {% endif %}
+        </form>
+        <div class="text-center mt-3">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary w-100">Voltar para o login</a>
         </div>
     </div>
-
-    <footer style="position:relative; z-index:1; text-align:center; color:#fff; margin-top:30px;">
-        &copy; {{ current_year }} Scartech Solution. Todos os direitos reservados.
-    </footer>
-
 </body>
 
 </html>
