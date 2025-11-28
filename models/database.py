@@ -79,6 +79,8 @@ def init_db():
         )
     ''')
 
+    ensure_column('ordens', 'nome_cliente', 'TEXT')
+
     # Tabela de vendas de acessórios (multi-tenant)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS acessorios (

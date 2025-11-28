@@ -80,6 +80,7 @@
 <body>
 
     <h2>Ordem de Serviço #{{ ordem[0] }}</h2>
+    {% set cliente_display = ordem[9] if ordem|length > 9 and ordem[9] else ordem[1] %}
     <button onclick="window.print()"
         style="position:fixed;top:20px;right:20px;z-index:999;background:#5865f2;color:#fff;border:none;padding:8px 18px;border-radius:6px;box-shadow:0 2px 8px #0002;cursor:pointer;font-size:1rem;">
         <i class="bi bi-printer"></i> Imprimir / Salvar PDF
@@ -87,7 +88,7 @@
 
     <div class="campo">
         <span class="label">Cliente:</span>
-        {{ ordem[1] }}
+        {{ cliente_display }}
     </div>
 
     <div class="campo">

@@ -34,10 +34,11 @@
 
 <body>
     <h2>Ordem de Serviço #{{ ordem[0] }}</h2>
+    {% set cliente_display = ordem[9] if ordem|length > 9 and ordem[9] else ordem[1] %}
     <table>
         <tr>
             <th>Cliente</th>
-            <td>{{ ordem[1] }}</td>
+            <td>{{ cliente_display }}</td>
         </tr>
         <tr>
             <th>Telefone</th>

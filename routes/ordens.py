@@ -168,8 +168,9 @@ def nova_ordem():
 
 
     if request.method == 'POST':
-        # O nome do cliente é o preenchido no campo do formulário
-        cliente = request.form.get('cliente', '').strip()
+        # O nome do cliente final é o campo preenchido pelo usuário,
+        # enquanto o campo "cliente" na tabela representa o dono (email da assistência)
+        nome_cliente = request.form.get('cliente', '').strip()
         telefone = request.form.get('telefone', '').strip()
         aparelho = request.form.get('aparelho', '').strip()
         defeito = request.form.get('defeito', '').strip()
@@ -177,6 +178,7 @@ def nova_ordem():
         status = request.form.get('status', 'Recebido')
         data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         imagem_nome = None
+        dono_email = session.get('user')
 
         if 'foto_ordem' in request.files:
             foto = request.files['foto_ordem']
@@ -184,12 +186,16 @@ def nova_ordem():
                 ext = os.path.splitext(foto.filename)[1]
                 imagem_nome = f"{aparelho}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
                 pasta_imagens = os.path.join(current_app.root_path, 'static', 'imagens')
-                if not os.path.exists(pasta_imagens):
-                    os.makedirs(pasta_imagens)
-                caminho = os.path.join(pasta_imagens, imagem_nome)
-                foto.save(caminho)
+                try:
+                    os.makedirs(pasta_imagens, exist_ok=True)
+                    caminho = os.path.join(pasta_imagens, imagem_nome)
+                    foto.save(caminho)
+                except OSError as exc:
+                    current_app.logger.warning('Não foi possível salvar a imagem da ordem: %s', exc)
+                    flash('Não foi possível salvar a foto no ambiente atual. A ordem será registrada sem imagem.', 'warning')
+                    imagem_nome = None
 
-        if not cliente or not telefone or not aparelho or not defeito or not valor:
+        if not nome_cliente or not telefone or not aparelho or not defeito or not valor:
             erro = "Preencha todos os campos obrigatórios."
         else:
             try:
@@ -197,12 +203,12 @@ def nova_ordem():
                 conn = sqlite3.connect(get_db_path())
                 cursor = conn.cursor()
                 cursor.execute(
-                    'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                    (cliente, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao)
+                    'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao, nome_cliente) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (dono_email, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao, nome_cliente)
                 )
                 conn.commit()
                 # Log para depuração
-                print(f"Ordem criada: cliente={cliente}, aparelho={aparelho}, valor={valor}, data={data_criacao}")
+                print(f"Ordem criada: assistencia={dono_email}, cliente_final={nome_cliente}, aparelho={aparelho}, valor={valor}, data={data_criacao}")
                 conn.close()
                 return redirect(url_for('ordens.listar_ordens'))
             except Exception as e:

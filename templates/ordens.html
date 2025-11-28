@@ -51,10 +51,11 @@
             </tr>
             {% else %}
             {% for ordem in lista %}
+            {% set cliente_display = ordem[9] if ordem|length > 9 and ordem[9] else ordem[1] %}
             <tr class="os-row">
-                <td><strong>{{ ordem[3] }} - {{ ordem[1] }}</strong></td>
+                <td><strong>{{ ordem[3] }} - {{ cliente_display }}</strong></td>
                 <td>{{ ordem[0] }}</td>
-                <td class="os-cliente">{{ ordem[1] }}</td>
+                <td class="os-cliente">{{ cliente_display }}</td>
                 <td>{{ ordem[2] }}</td>
                 <td class="os-aparelho">{{ ordem[3] }}</td>
                 <td>{{ ordem[4] }}</td>
