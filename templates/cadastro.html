@@ -80,12 +80,6 @@
         .plan-wrapper {
             margin-bottom: 1.5rem;
             transition: max-height 0.35s ease, opacity 0.25s ease;
-            max-height: 0;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .plan-wrapper.visible {
             max-height: 1200px;
             opacity: 1;
             pointer-events: auto;
@@ -237,13 +231,13 @@
     <div class="login-container" style="position:relative; z-index:1;">
         <h2>Cadastro da Assistência</h2>
         <form method="post" id="cadastroForm">
-            <div class="plan-wrapper {% if nome_assistencia or mostrar_qr %}visible{% endif %}"
-                data-force-visible="{% if nome_assistencia or mostrar_qr %}true{% else %}false{% endif %}">
+            <div class="plan-wrapper visible">
                 <p class="plan-helper">Escolha um plano para liberar o QR Code automático</p>
                 <div class="plan-grid">
                     {% for plano in planos %}
-                    <label class="plan-card {% if plano.id == plano_escolhido %}active{% endif %}">
-                        <input type="radio" name="plano" value="{{ plano.id }}" {% if plano.id == plano_escolhido %}checked{% endif %} required>
+                    {% set selecionado = plano.id == plano_escolhido or (not plano_escolhido and loop.first) %}
+                    <label class="plan-card {% if selecionado %}active{% endif %}">
+                        <input type="radio" name="plano" value="{{ plano.id }}" {% if selecionado %}checked{% endif %} required>
                         <div class="plan-badge">{{ plano.badge }}</div>
                         <h3>{{ plano.titulo }}</h3>
                         <p>{{ plano.descricao }}</p>
@@ -257,7 +251,7 @@
                 <label for="nome_assistencia" class="form-label">Nome da Assistência</label>
                 <input type="text" class="form-control" id="nome_assistencia" name="nome_assistencia"
                     value="{{ nome_assistencia|default('') }}" required autocomplete="organization">
-                <small class="text-muted">Os planos aparecem automaticamente assim que você digitar o nome.</small>
+                <small class="text-muted">Os planos acima já estão disponíveis. Basta escolher um e preencher seus dados.</small>
             </div>
             <div class="mb-3">
                 <label for="email" class="form-label">E-mail</label>
@@ -294,27 +288,8 @@
     </div>
 <script>
     const form = document.getElementById('cadastroForm');
-    const nomeInput = document.getElementById('nome_assistencia');
-    const planWrapper = document.querySelector('.plan-wrapper');
     const planRadios = document.querySelectorAll('.plan-card input[type="radio"]');
     const copiarBtn = document.getElementById('btnCopiar');
-    const forceVisible = planWrapper && planWrapper.dataset.forceVisible === 'true';
-
-    function togglePlanWrapper() {
-        if (!planWrapper || forceVisible) {
-            if (planWrapper) {
-                planWrapper.classList.add('visible');
-            }
-            return;
-        }
-        const hasValue = nomeInput && nomeInput.value.trim().length > 0;
-        planWrapper.classList.toggle('visible', hasValue);
-    }
-
-    if (nomeInput) {
-        nomeInput.addEventListener('input', togglePlanWrapper);
-        togglePlanWrapper();
-    }
 
     planRadios.forEach((radio) => {
         radio.addEventListener('change', () => {
