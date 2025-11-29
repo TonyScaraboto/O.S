@@ -7,6 +7,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from datetime import datetime, timedelta
 from routes.saas_guard import checar_trial_e_pagamento
 from utils.pdf_utils import build_pdf_image_src
+from utils.image_storage import store_image
 
 ordens_bp = Blueprint('ordens', __name__)
 
@@ -192,21 +193,11 @@ def nova_ordem():
         if 'foto_ordem' in request.files:
             foto = request.files['foto_ordem']
             if foto and foto.filename:
-                if os.environ.get('VERCEL_ENV'):
-                    flash('O upload de fotos não é suportado no ambiente atual. A ordem foi registrada sem imagem.', 'warning')
+                prefixo = f"{aparelho or 'ordem'}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                imagem_nome, erro_upload = store_image(foto, 'imagens', prefixo)
+                if erro_upload:
+                    flash(erro_upload, 'warning')
                     imagem_nome = None
-                else:
-                    ext = os.path.splitext(foto.filename)[1]
-                    imagem_nome = f"{aparelho}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
-                    pasta_imagens = os.path.join(current_app.root_path, 'static', 'imagens')
-                    try:
-                        os.makedirs(pasta_imagens, exist_ok=True)
-                        caminho = os.path.join(pasta_imagens, imagem_nome)
-                        foto.save(caminho)
-                    except OSError as exc:
-                        current_app.logger.warning('Não foi possível salvar a imagem da ordem: %s', exc)
-                        flash('Não foi possível salvar a foto no ambiente atual. A ordem será registrada sem imagem.', 'warning')
-                        imagem_nome = None
 
         if not nome_cliente or not telefone or not aparelho or not defeito or not valor or not dono_email:
             erro = "Preencha todos os campos obrigatórios."
@@ -377,21 +368,11 @@ def salvar_acessorio():
     if 'foto_acessorio' in request.files:
         foto = request.files['foto_acessorio']
         if foto and foto.filename:
-            if os.environ.get('VERCEL_ENV'):
-                flash('O upload de fotos de acessórios não é suportado no ambiente atual.', 'warning')
+            prefixo = f"{nome or 'acessorio'}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            imagem_nome, erro_upload = store_image(foto, 'imagens', prefixo)
+            if erro_upload:
+                flash(erro_upload, 'warning')
                 imagem_nome = None
-            else:
-                ext = os.path.splitext(foto.filename)[1]
-                imagem_nome = f"{nome}_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
-                pasta_imagens = os.path.join(current_app.root_path, 'static', 'imagens')
-                try:
-                    os.makedirs(pasta_imagens, exist_ok=True)
-                    caminho = os.path.join(pasta_imagens, imagem_nome)
-                    foto.save(caminho)
-                except OSError as exc:
-                    current_app.logger.warning('Não foi possível salvar a imagem do acessório: %s', exc)
-                    flash('Não foi possível salvar a imagem do acessório no ambiente atual.', 'warning')
-                    imagem_nome = None
 
     if not nome or quantidade <= 0 or preco_unitario <= 0:
         flash("Preencha todos os campos corretamente.")

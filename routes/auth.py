@@ -13,6 +13,7 @@ auth_bp = Blueprint('auth', __name__)
  
 import os
 from flask import current_app
+from utils.image_storage import store_image
 @auth_bp.route('/perfil', methods=['GET', 'POST'])
 def perfil():
     nome_assistencia = session.get('nome_assistencia', "Assistência Técnica Exemplo")
@@ -75,28 +76,19 @@ def perfil():
     if request.method == 'POST' and 'foto_perfil' in request.files:
         foto = request.files['foto_perfil']
         if foto and foto.filename:
-            if os.environ.get('VERCEL_ENV'):
-                flash('O upload de fotos de perfil não é suportado no ambiente atual.', 'warning')
-            else:
-                ext = os.path.splitext(foto.filename)[1]
-                nome_arquivo = f"{nome_usuario}_perfil{ext}"
-                pasta_fotos = os.path.join(current_app.root_path, 'static', 'fotos_perfil')
-                try:
-                    os.makedirs(pasta_fotos, exist_ok=True)
-                    caminho = os.path.join(pasta_fotos, nome_arquivo)
-                    foto.save(caminho)
-                except OSError as exc:
-                    current_app.logger.warning('Não foi possível salvar a foto de perfil: %s', exc)
-                    flash('Não foi possível salvar a foto de perfil no ambiente atual.', 'warning')
-                else:
-                    session['foto_perfil'] = nome_arquivo
-                    user_email = session.get('user')
-                    if user_email:
-                        conn = sqlite3.connect(get_db_path())
-                        cursor = conn.cursor()
-                        cursor.execute('UPDATE clientes SET foto_perfil=? WHERE email=?', (nome_arquivo, user_email))
-                        conn.commit()
-                        conn.close()
+            prefixo = f"{nome_usuario or 'usuario'}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            nome_arquivo, erro_upload = store_image(foto, 'fotos_perfil', prefixo)
+            if erro_upload:
+                flash(erro_upload, 'warning')
+            elif nome_arquivo:
+                session['foto_perfil'] = nome_arquivo
+                user_email = session.get('user')
+                if user_email:
+                    conn = sqlite3.connect(get_db_path())
+                    cursor = conn.cursor()
+                    cursor.execute('UPDATE clientes SET foto_perfil=? WHERE email=?', (nome_arquivo, user_email))
+                    conn.commit()
+                    conn.close()
 
     foto_perfil = session.get('foto_perfil')
     return render_template('perfil.html', nome_assistencia=nome_assistencia, nome_usuario=nome_usuario, data_aquisicao=data_aquisicao, foto_perfil=foto_perfil, dias_trial_restantes=dias_trial_restantes, data_fim_trial=data_fim_trial)

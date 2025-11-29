@@ -8,9 +8,15 @@
         <div class="card-header text-center border-0 bg-dark" style="background: transparent; padding-bottom: 0;">
             <div class="position-relative d-inline-block mb-3">
                 {% if foto_perfil %}
-                <img src="{{ url_for('static', filename='fotos_perfil/' ~ foto_perfil) }}" alt="Foto de Perfil"
-                    class="rounded-circle"
-                    style="width: 90px; height: 90px; object-fit: cover; border: 2px solid #fff;">
+                    {% if foto_perfil.startswith('data:') %}
+                    <img src="{{ foto_perfil }}" alt="Foto de Perfil"
+                        class="rounded-circle"
+                        style="width: 90px; height: 90px; object-fit: cover; border: 2px solid #fff;">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='fotos_perfil/' ~ foto_perfil) }}" alt="Foto de Perfil"
+                        class="rounded-circle"
+                        style="width: 90px; height: 90px; object-fit: cover; border: 2px solid #fff;">
+                    {% endif %}
                 {% else %}
                 <i class="bi bi-person-circle" style="font-size: 2.5rem;"></i>
                 {% endif %}
@@ -66,9 +72,15 @@
                 <div class="modal-body">
                     <div class="mb-3 text-center">
                         {% if foto_perfil %}
-                        <img src="{{ url_for('static', filename='fotos_perfil/' ~ foto_perfil) }}" alt="Foto de Perfil"
-                            class="rounded-circle mb-2"
-                            style="width: 90px; height: 90px; object-fit: cover; border: 2px solid #fff;">
+                            {% if foto_perfil.startswith('data:') %}
+                            <img src="{{ foto_perfil }}" alt="Foto de Perfil"
+                                class="rounded-circle mb-2"
+                                style="width: 90px; height: 90px; object-fit: cover; border: 2px solid #fff;">
+                            {% else %}
+                            <img src="{{ url_for('static', filename='fotos_perfil/' ~ foto_perfil) }}" alt="Foto de Perfil"
+                                class="rounded-circle mb-2"
+                                style="width: 90px; height: 90px; object-fit: cover; border: 2px solid #fff;">
+                            {% endif %}
                         {% else %}
                         <i class="bi bi-person-circle" style="font-size: 2.5rem;"></i>
                         {% endif %}
