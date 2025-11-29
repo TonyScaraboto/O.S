@@ -71,11 +71,11 @@
                 </td>
                 <td>
                     {% if ordem[7] %}
-                        {% if ordem[7].startswith('data:') %}
-                        <img src="{{ ordem[7] }}" width="100">
-                        {% else %}
-                        <img src="{{ url_for('static', filename='imagens/' ~ ordem[7]) }}" width="100">
-                        {% endif %}
+                    {% if ordem[7].startswith('data:') %}
+                    <img src="{{ ordem[7] }}" width="100">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='imagens/' ~ ordem[7]) }}" width="100">
+                    {% endif %}
                     {% else %}
                     <span class="text-muted">Sem imagem</span>
                     {% endif %}
