@@ -1,10 +1,10 @@
 import requests
-import os
-from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, current_app, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, send_file
 from models.database import get_db_path
 import sqlite3
 import io
 from datetime import datetime
+from utils.pdf_utils import build_pdf_image_src
 
 pdf_api_bp = Blueprint('pdf_api', __name__)
 
@@ -25,10 +25,7 @@ def gerar_pdf_api(id):
     if not ordem:
         return "Ordem não encontrada.", 404
 
-    foto_nome = None
-    if len(ordem) > 7 and ordem[7]:
-        foto_nome = os.path.join(current_app.root_path, 'static', 'imagens', ordem[7])
-        foto_nome = 'file:///' + foto_nome.replace('\\', '/').replace(' ', '%20')
+    foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
 
     html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now())
 

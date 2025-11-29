@@ -6,6 +6,7 @@ from functools import lru_cache
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, send_from_directory, abort, current_app
 from datetime import datetime, timedelta
 from routes.saas_guard import checar_trial_e_pagamento
+from utils.pdf_utils import build_pdf_image_src
 
 ordens_bp = Blueprint('ordens', __name__)
 
@@ -59,12 +60,7 @@ def gerar_pdf(id):
         return "Ordem não encontrada.", 404
 
     
-    foto_nome = None
-    if len(ordem) > 7 and ordem[7]:
-        
-        foto_nome = os.path.join(current_app.root_path, 'static', 'imagens', ordem[7])
-        
-        foto_nome = 'file:///' + foto_nome.replace('\\', '/').replace(' ', '%20')
+    foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
     # PDF desativado para ambiente serverless
     html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now())
     return html
