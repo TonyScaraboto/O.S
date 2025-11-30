@@ -305,7 +305,6 @@ def init_db():
         )
         '''
     )
-    _ensure_column(cursor, 'acessorios', 'imagem', 'TEXT', None)
 
     ordens_pk = _auto_increment_pk()
     cursor.execute(
@@ -340,6 +339,7 @@ def init_db():
         )
         '''
     )
+    _ensure_column(cursor, 'acessorios', 'imagem', 'TEXT', None)
 
     _insert_default_users(cursor)
     conn.commit()
