@@ -44,4 +44,3 @@ def store_image(file_storage, subdir, prefix):
     except OSError as exc:
         current_app.logger.warning('Falha ao salvar imagem %s: %s', filename, exc)
         return None, 'Não foi possível salvar a imagem no ambiente atual.'
-```}
