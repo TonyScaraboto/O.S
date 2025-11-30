@@ -95,7 +95,6 @@ def perfil():
     foto_perfil = session.get('foto_perfil')
     return render_template('perfil.html', nome_assistencia=nome_assistencia, nome_usuario=nome_usuario, data_aquisicao=data_aquisicao, foto_perfil=foto_perfil, dias_trial_restantes=dias_trial_restantes, data_fim_trial=data_fim_trial)
 
-# 🔐 Rota de login
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     last_user = request.cookies.get('last_user', '')
@@ -180,7 +179,6 @@ def login():
 
     return render_template('login.html', current_year=datetime.now().year, last_user=last_user)
 
-# 🚪 Rota de logout
 @auth_bp.route('/logout', methods=['GET', 'POST'])
 def logout():
     last_user = session.get('user')
