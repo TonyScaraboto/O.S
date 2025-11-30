@@ -182,6 +182,12 @@ def _ensure_column(cursor, table, column_name, column_def, default_value=None):
                     (default_value,)
                 )
     else:
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (table,)
+        )
+        if not cursor.fetchone():
+            return
         cursor.execute(f"PRAGMA table_info({table})")
         existing_columns = [row[1] for row in cursor.fetchall()]
         if column_name not in existing_columns:
