@@ -2,6 +2,10 @@
 
 {% block title %}Nova Ordem{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='nova_ordem.css') }}">
+{% endblock %}
+
 {% block content %}
 <h2 class="mb-4">Cadastrar Nova Ordem</h2>
 
