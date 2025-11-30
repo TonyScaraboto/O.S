@@ -8,6 +8,20 @@ body {
     background-color: #202225;
     color: #ffffff;
     border: 1px solid #555;
+    caret-color: #ffffff;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: #2f3238;
+    color: #ffffff;
+    border-color: #7f8cff;
+    box-shadow: 0 0 0 0.15rem rgba(127, 140, 255, 0.35);
+}
+
+.form-control::placeholder,
+textarea::placeholder {
+    color: rgba(255, 255, 255, 0.65);
 }
 
 .btn-primary {

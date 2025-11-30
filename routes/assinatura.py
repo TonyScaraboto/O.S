@@ -1,12 +1,11 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash
-import sqlite3
-from models.database import get_db_path
+from models.database import get_connection
 from datetime import datetime
 
 assinatura_bp = Blueprint('assinatura', __name__)
 
 def get_db():
-    return sqlite3.connect(get_db_path())
+    return get_connection()
 
 @assinatura_bp.route('/assinatura')
 def status_assinatura():
@@ -26,3 +25,4 @@ def status_assinatura():
     if data_fim_trial:
         dias_restantes = (datetime.strptime(data_fim_trial, '%Y-%m-%d') - datetime.now()).days
     return render_template('assinatura.html', nome_assistencia=nome_assistencia, assinatura_ativa=assinatura_ativa, dias_restantes=dias_restantes, pix_pagamento=pix_pagamento)
+   

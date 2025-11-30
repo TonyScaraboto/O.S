@@ -1,7 +1,6 @@
 import requests
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, send_file
-from models.database import get_db_path
-import sqlite3
+from models.database import get_connection
 import io
 from datetime import datetime
 from utils.pdf_utils import build_pdf_image_src
@@ -16,7 +15,7 @@ def gerar_pdf_api(id):
     if 'user' not in session:
         return redirect(url_for('auth.login'))
 
-    conn = sqlite3.connect(get_db_path())
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
     ordem = cursor.fetchone()

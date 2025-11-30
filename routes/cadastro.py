@@ -1,8 +1,7 @@
 
 
 from flask import Blueprint, render_template, request, flash, url_for, current_app
-import sqlite3
-from models.database import get_db_path
+from models.database import get_connection
 from datetime import datetime
 import bcrypt
 import re
@@ -35,7 +34,7 @@ PLANOS_WOOXY = {
 cadastro_bp = Blueprint('cadastro', __name__)
 
 def get_db():
-    return sqlite3.connect(get_db_path())
+    return get_connection()
 
 
 @cadastro_bp.route('/cadastro', methods=['GET', 'POST'])
@@ -73,7 +72,7 @@ def cadastro():
 
         conn = None
         try:
-            conn = sqlite3.connect(get_db_path())
+            conn = get_connection()
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT INTO clientes (
@@ -142,7 +141,7 @@ def cadastro():
             copia_cola = wooxy_details.get('qr_copia_cola') or qr_payload
             update_conn = None
             try:
-                update_conn = sqlite3.connect(get_db_path())
+                update_conn = get_connection()
                 cursor = update_conn.cursor()
                 cursor.execute('''
                     UPDATE clientes

@@ -1,8 +1,7 @@
 
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash
-import sqlite3
-from models.database import get_db_path
+from models.database import get_connection
 from datetime import datetime
 import bcrypt
 import tempfile
@@ -25,7 +24,7 @@ def perfil():
     # Buscar data de aquisição e fim do trial do banco
     user_email = session.get('user')
     if user_email:
-        conn = sqlite3.connect(get_db_path())
+        conn = get_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT data_cadastro, data_fim_trial FROM clientes WHERE email=?', (user_email,))
         row = cursor.fetchone()
@@ -49,7 +48,7 @@ def perfil():
             # Persistir no banco
             user_email = session.get('user')
             if user_email:
-                conn = sqlite3.connect(get_db_path())
+                conn = get_connection()
                 cursor = conn.cursor()
                 cursor.execute('UPDATE clientes SET nome_assistencia=? WHERE email=?', (novo_nome, user_email))
                 conn.commit()
@@ -65,7 +64,7 @@ def perfil():
             # Persistir no banco
             user_email = session.get('user')
             if user_email:
-                conn = sqlite3.connect(get_db_path())
+                conn = get_connection()
                 cursor = conn.cursor()
                 cursor.execute('UPDATE clientes SET nome_assistencia=? WHERE email=?', (novo_usuario, user_email))
                 conn.commit()
@@ -84,7 +83,7 @@ def perfil():
                 session['foto_perfil'] = nome_arquivo
                 user_email = session.get('user')
                 if user_email:
-                    conn = sqlite3.connect(get_db_path())
+                    conn = get_connection()
                     cursor = conn.cursor()
                     cursor.execute('UPDATE clientes SET foto_perfil=? WHERE email=?', (nome_arquivo, user_email))
                     conn.commit()
@@ -105,7 +104,7 @@ def login():
             pwd = request.form['password']
             print(f"Tentando login para usuário: {user}")
 
-            conn = sqlite3.connect(get_db_path())
+            conn = get_connection()
             cursor = conn.cursor()
 
             # Tenta login por username
