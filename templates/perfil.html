@@ -62,7 +62,6 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark text-white">
             <form method="post" enctype="multipart/form-data" action="{{ url_for('auth.perfil') }}">
-                <input type="hidden" name="acao" value="alterar_nome">
                 <div class="modal-header border-0">
                     <h5 class="modal-title" id="modalEditarPerfilLabel">Editar Perfil</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
@@ -90,6 +89,11 @@
                         <input type="text" class="form-control bg-dark text-white border-secondary text-center"
                             id="novo_nome_assistencia_modal" name="novo_nome_assistencia" value="{{ nome_assistencia }}"
                             required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="novo_nome_usuario_modal" class="form-label">Nome do Usuário</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary text-center"
+                            id="novo_nome_usuario_modal" name="novo_nome_usuario" value="{{ nome_usuario }}">
                     </div>
                 </div>
                 <div class="modal-footer border-0">

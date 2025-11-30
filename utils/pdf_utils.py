@@ -9,7 +9,7 @@ def _candidate_paths(filename):
     if not filename:
         return []
     root = current_app.root_path
-    normalized = filename.replace('\', '/').lstrip('/')
+    normalized = filename.replace('\\', '/').lstrip('/')
     candidates = []
     if os.path.isabs(filename):
         candidates.append(filename)

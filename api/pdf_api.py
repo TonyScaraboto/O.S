@@ -1,14 +1,15 @@
-import requests
-from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, flash, send_file
-from models.database import get_connection
 import io
+import os
+import requests
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, send_file
+from models.database import get_connection
 from datetime import datetime
 from utils.pdf_utils import build_pdf_image_src
 
 pdf_api_bp = Blueprint('pdf_api', __name__)
 
-PDFSHIFT_API_KEY = 'sk_1f707469f4cb0a5f4a0c6bfcce8aefdce86203f1'  # Chave real do usuário
-PDFSHIFT_URL = 'https://api.pdfshift.io/v3/convert/pdf'
+PDFSHIFT_URL = os.environ.get('PDFSHIFT_URL', 'https://api.pdfshift.io/v3/convert/pdf')
+PDFSHIFT_API_KEY = os.environ.get('PDFSHIFT_API_KEY')
 
 @pdf_api_bp.route('/pdf_ordem_api/<int:id>')
 def gerar_pdf_api(id):
@@ -35,10 +36,15 @@ def gerar_pdf_api(id):
     else:
         source = html
 
+    api_key = os.environ.get('PDFSHIFT_API_KEY', PDFSHIFT_API_KEY)
+    if not api_key:
+        flash('API PDFShift não configurada.', 'danger')
+        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), erro_pdf='Configuração ausente')
+
     try:
         response = requests.post(
             PDFSHIFT_URL,
-            headers={'X-API-Key': PDFSHIFT_API_KEY},
+            headers={'X-API-Key': api_key},
             json={
                 'source': source,
                 'landscape': False,

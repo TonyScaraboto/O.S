@@ -77,6 +77,7 @@ def cadastro():
             cursor.execute('''
                 INSERT INTO clientes (
                     nome_assistencia,
+                    nome_usuario,
                     email,
                     senha,
                     senha_pura,
@@ -90,8 +91,9 @@ def cadastro():
                     wooxy_qr_code,
                     wooxy_copia_cola
                 )
-                VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?)
             ''', (
+                nome_assistencia,
                 nome_assistencia,
                 email,
                 senha_hash.decode('utf-8'),

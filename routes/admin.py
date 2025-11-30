@@ -46,8 +46,8 @@ def painel_admin():
             senha_hash = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt())
             data_cadastro = datetime.now().strftime('%Y-%m-%d')
             try:
-                cursor.execute('''INSERT INTO clientes (nome_assistencia, email, senha, senha_pura, data_cadastro, trial_ativo, assinatura_ativa) VALUES (?, ?, ?, ?, ?, 1, 0)''',
-                    (nome_assistencia, email, senha_hash, senha, data_cadastro))
+                cursor.execute('''INSERT INTO clientes (nome_assistencia, nome_usuario, email, senha, senha_pura, data_cadastro, trial_ativo, assinatura_ativa) VALUES (?, ?, ?, ?, ?, ?, 1, 0)''',
+                    (nome_assistencia, nome_assistencia, email, senha_hash, senha, data_cadastro))
                 cursor.execute('''INSERT INTO usuarios (username, password, role) VALUES (?, ?, ?)''',
                     (email, senha_hash, 'cliente'))
                 conn.commit()

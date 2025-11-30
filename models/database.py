@@ -194,23 +194,23 @@ def _insert_default_client(cursor):
     if IS_POSTGRES:
         cursor.execute(
             '''
-            INSERT INTO clientes (nome_assistencia, email, senha, senha_pura, data_cadastro, trial_ativo, data_fim_trial, assinatura_ativa)
-            VALUES ('ADMIN', 'admin@saas.com', 'admin123', 'admin123', '2024-01-01', 0, NULL, 1)
+            INSERT INTO clientes (nome_assistencia, nome_usuario, email, senha, senha_pura, data_cadastro, trial_ativo, data_fim_trial, assinatura_ativa)
+            VALUES ('ADMIN', 'ADMIN', 'admin@saas.com', 'admin123', 'admin123', '2024-01-01', 0, NULL, 1)
             ON CONFLICT (email) DO NOTHING
             '''
         )
     elif IS_MYSQL:
         cursor.execute(
             '''
-            INSERT IGNORE INTO clientes (nome_assistencia, email, senha, senha_pura, data_cadastro, trial_ativo, data_fim_trial, assinatura_ativa)
-            VALUES ('ADMIN', 'admin@saas.com', 'admin123', 'admin123', '2024-01-01', 0, NULL, 1)
+            INSERT IGNORE INTO clientes (nome_assistencia, nome_usuario, email, senha, senha_pura, data_cadastro, trial_ativo, data_fim_trial, assinatura_ativa)
+            VALUES ('ADMIN', 'ADMIN', 'admin@saas.com', 'admin123', 'admin123', '2024-01-01', 0, NULL, 1)
             '''
         )
     else:
         cursor.execute(
             '''
-            INSERT OR IGNORE INTO clientes (nome_assistencia, email, senha, senha_pura, data_cadastro, trial_ativo, data_fim_trial, assinatura_ativa)
-            VALUES ('ADMIN', 'admin@saas.com', 'admin123', 'admin123', '2024-01-01', 0, NULL, 1)
+            INSERT OR IGNORE INTO clientes (nome_assistencia, nome_usuario, email, senha, senha_pura, data_cadastro, trial_ativo, data_fim_trial, assinatura_ativa)
+            VALUES ('ADMIN', 'ADMIN', 'admin@saas.com', 'admin123', 'admin123', '2024-01-01', 0, NULL, 1)
             '''
         )
 
@@ -265,6 +265,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS clientes (
             id {clientes_pk},
             nome_assistencia TEXT NOT NULL,
+            nome_usuario TEXT,
             email TEXT UNIQUE NOT NULL,
             senha TEXT NOT NULL,
             data_cadastro TEXT NOT NULL,
@@ -289,6 +290,8 @@ def init_db():
     _ensure_column(cursor, 'clientes', 'wooxy_charge_id', 'TEXT', None)
     _ensure_column(cursor, 'clientes', 'wooxy_qr_code', 'TEXT', None)
     _ensure_column(cursor, 'clientes', 'wooxy_copia_cola', 'TEXT', None)
+    _ensure_column(cursor, 'clientes', 'nome_usuario', 'TEXT', None)
+    cursor.execute('UPDATE clientes SET nome_usuario = nome_assistencia WHERE nome_usuario IS NULL OR nome_usuario = ?', ('',))
     _insert_default_client(cursor)
 
     usuarios_pk = _auto_increment_pk()
@@ -302,6 +305,7 @@ def init_db():
         )
         '''
     )
+    _ensure_column(cursor, 'acessorios', 'imagem', 'TEXT', None)
 
     ordens_pk = _auto_increment_pk()
     cursor.execute(
@@ -331,7 +335,8 @@ def init_db():
             preco_unitario REAL NOT NULL,
             receita_total REAL NOT NULL,
             data_venda TEXT NOT NULL,
-            cliente TEXT NOT NULL
+            cliente TEXT NOT NULL,
+            imagem TEXT
         )
         '''
     )
