@@ -61,7 +61,7 @@
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark text-white">
-            <form method="post" enctype="multipart/form-data" action="{{ url_for('auth.perfil') }}">
+            <form method="post" enctype="multipart/form-data" action="{{ url_for('auth.perfil') }}" id="formEditarPerfil">
                 <div class="modal-header border-0">
                     <h5 class="modal-title" id="modalEditarPerfilLabel">Editar Perfil</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
@@ -82,9 +82,10 @@
                             <i class="bi bi-person-circle" style="font-size: 3rem;"></i>
                         </div>
                         {% endif %}
-                        <small class="d-block text-muted">Formatos aceitos: PNG ou JPG até 2MB</small>
+                        <small class="d-block text-muted">Formatos aceitos: PNG, JPG ou WEBP (máx. 2MB)</small>
                         <input type="file" class="form-control mt-3" id="foto_perfil_modal" name="foto_perfil"
-                            accept="image/*">
+                            accept="image/png,image/jpeg,image/webp">
+                        <div class="form-text text-warning d-none" id="feedbackFotoPerfil"></div>
                     </div>
                     <div class="mb-3">
                         <label for="novo_nome_assistencia_modal" class="form-label">Nome da Assistência</label>
@@ -113,10 +114,50 @@
     document.addEventListener('DOMContentLoaded', () => {
         const fotoInput = document.getElementById('foto_perfil_modal');
         const preview = document.getElementById('previewFotoPerfil');
+        const feedback = document.getElementById('feedbackFotoPerfil');
+        const formEditarPerfil = document.getElementById('formEditarPerfil');
+        const MAX_BYTES = 2 * 1024 * 1024;
+        const extensoesPermitidas = ['png', 'jpg', 'jpeg', 'webp'];
+
+        const limparErroFoto = () => {
+            if (feedback) {
+                feedback.textContent = '';
+                feedback.classList.add('d-none');
+            }
+        };
+
+        const mostrarErroFoto = (mensagem) => {
+            if (feedback) {
+                feedback.textContent = mensagem;
+                feedback.classList.remove('d-none');
+            }
+        };
+
+        const validarFoto = (file) => {
+            if (!file) {
+                return null;
+            }
+            const extensao = (file.name.split('.').pop() || '').toLowerCase();
+            if (!extensoesPermitidas.includes(extensao)) {
+                return 'Escolha uma imagem PNG, JPG ou WEBP.';
+            }
+            if (file.size > MAX_BYTES) {
+                return 'A imagem precisa ter até 2MB.';
+            }
+            return null;
+        };
+
         if (fotoInput && preview) {
             fotoInput.addEventListener('change', (event) => {
                 const file = event.target.files?.[0];
+                limparErroFoto();
                 if (!file) {
+                    return;
+                }
+                const erro = validarFoto(file);
+                if (erro) {
+                    mostrarErroFoto(erro);
+                    fotoInput.value = '';
                     return;
                 }
                 const reader = new FileReader();
@@ -130,6 +171,17 @@
                 reader.readAsDataURL(file);
             });
         }
+
+        formEditarPerfil?.addEventListener('submit', (event) => {
+            const file = fotoInput?.files?.[0];
+            const erro = validarFoto(file);
+            if (erro) {
+                event.preventDefault();
+                mostrarErroFoto(erro);
+                fotoInput.value = '';
+                fotoInput.focus();
+            }
+        });
     });
 </script>
 {% endblock %}

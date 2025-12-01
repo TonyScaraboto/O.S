@@ -14,13 +14,14 @@
             aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content bg-dark text-white">
-                    <form method="post" action="{{ url_for('admin.painel_admin') }}">
+                    <form method="post" action="{{ url_for('admin.painel_admin') }}" id="formNovoUsuario">
                         <div class="modal-header">
                             <h5 class="modal-title" id="modalNovoUsuarioLabel">Adicionar Novo Usuário</h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                                 aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
+                            <input type="hidden" name="criar_usuario" value="1">
                             <p class="text-muted small">Crie acessos manuais para liberar usuários sem passar pelo fluxo
                                 de pagamento.</p>
                             <div class="mb-3">
@@ -37,12 +38,12 @@
                                 <input type="password" class="form-control" id="nova_senha" name="nova_senha" required>
                                 <small class="text-muted">Informe uma senha temporária; o cliente poderá alterar
                                     depois.</small>
+                                <div class="form-text text-warning d-none" id="feedbackNovoUsuario"></div>
                             </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-primary" name="criar_usuario"
-                                value="1">Adicionar</button>
+                            <button type="submit" class="btn btn-primary">Adicionar</button>
                         </div>
                     </form>
                 </div>
@@ -109,8 +110,55 @@
 {% block extra_scripts %}
 <script>
     const modalNovoUsuario = document.getElementById('modalNovoUsuario');
+    const formNovoUsuario = document.getElementById('formNovoUsuario');
+    const feedbackNovoUsuario = document.getElementById('feedbackNovoUsuario');
+
+    const limparErroNovoUsuario = () => {
+        if (feedbackNovoUsuario) {
+            feedbackNovoUsuario.textContent = '';
+            feedbackNovoUsuario.classList.add('d-none');
+        }
+    };
+
+    const mostrarErroNovoUsuario = (mensagem) => {
+        if (feedbackNovoUsuario) {
+            feedbackNovoUsuario.textContent = mensagem;
+            feedbackNovoUsuario.classList.remove('d-none');
+        }
+    };
+
     modalNovoUsuario?.addEventListener('shown.bs.modal', () => {
         document.getElementById('novo_nome_assistencia')?.focus();
+        limparErroNovoUsuario();
+        formNovoUsuario?.reset();
+    });
+
+    formNovoUsuario?.addEventListener('submit', (event) => {
+        limparErroNovoUsuario();
+        const nome = document.getElementById('novo_nome_assistencia')?.value.trim();
+        const email = document.getElementById('novo_email')?.value.trim();
+        const senha = document.getElementById('nova_senha')?.value;
+
+        const emailRegex = /^[\w.+-]+@[\w-]+\.[\w.-]+$/;
+
+        if (!nome || !email || !senha) {
+            event.preventDefault();
+            mostrarErroNovoUsuario('Preencha todos os campos antes de salvar.');
+            return;
+        }
+
+        if (!emailRegex.test(email)) {
+            event.preventDefault();
+            mostrarErroNovoUsuario('Informe um e-mail válido.');
+            document.getElementById('novo_email')?.focus();
+            return;
+        }
+
+        if (senha.length < 8) {
+            event.preventDefault();
+            mostrarErroNovoUsuario('A senha precisa ter pelo menos 8 caracteres.');
+            document.getElementById('nova_senha')?.focus();
+        }
     });
 </script>
 {% endblock %}
