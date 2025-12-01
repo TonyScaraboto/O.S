@@ -10,7 +10,7 @@
             </button>
         </div>
         <!-- Modal de cadastro de novo usuário -->
-        <div class="modal fade" id="modalNovoUsuario" tabindex="-1" aria-labelledby="modalNovoUsuarioLabel"
+        <div class="modal fade neon-modal" id="modalNovoUsuario" tabindex="-1" aria-labelledby="modalNovoUsuarioLabel"
             aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content bg-dark text-white">
@@ -21,6 +21,7 @@
                                 aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
+                            <p class="text-muted small">Crie acessos manuais para liberar usuários sem passar pelo fluxo de pagamento.</p>
                             <div class="mb-3">
                                 <label for="novo_nome_assistencia" class="form-label">Nome da Assistência</label>
                                 <input type="text" class="form-control" id="novo_nome_assistencia"
@@ -33,6 +34,7 @@
                             <div class="mb-3">
                                 <label for="nova_senha" class="form-label">Senha</label>
                                 <input type="password" class="form-control" id="nova_senha" name="nova_senha" required>
+                                <small class="text-muted">Informe uma senha temporária; o cliente poderá alterar depois.</small>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -101,3 +103,12 @@
     </div>
 </div>
 {% endblock %}
+
+    {% block extra_scripts %}
+    <script>
+        const modalNovoUsuario = document.getElementById('modalNovoUsuario');
+        modalNovoUsuario?.addEventListener('shown.bs.modal', () => {
+            document.getElementById('novo_nome_assistencia')?.focus();
+        });
+    </script>
+    {% endblock %}

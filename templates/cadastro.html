@@ -454,12 +454,14 @@
                             {% for plano in planos %}
                             {% set selecionado = plano.id == plano_escolhido or (not plano_escolhido and loop.first) %}
                             <label class="plan-card {% if selecionado %}active{% endif %}">
-                                <input type="radio" name="plano" value="{{ plano.id }}" {% if selecionado %}checked{% endif %} required>
+                                <input type="radio" name="plano" value="{{ plano.id }}" {% if selecionado %}checked{%
+                                    endif %} required>
                                 <div class="plan-badge">{{ plano.badge }}</div>
                                 <h3>{{ plano.titulo }}</h3>
                                 <p>{{ plano.descricao }}</p>
                                 <div class="plan-price">R$ {{ '%.2f'|format(plano.valor) }}</div>
-                                <span class="plan-duration">{% if plano.id == 'mensal' %}30 dias{% elif plano.id == 'trimestral' %}90 dias{% else %}12 meses{% endif %}</span>
+                                <span class="plan-duration">{% if plano.id == 'mensal' %}30 dias{% elif plano.id ==
+                                    'trimestral' %}90 dias{% else %}12 meses{% endif %}</span>
                             </label>
                             {% endfor %}
                         </div>
@@ -470,16 +472,19 @@
                         <h3>Informações da Assistência</h3>
                         <div class="mb-3">
                             <label for="nome_assistencia" class="form-label">Nome da Assistência</label>
-                            <input type="text" class="form-control" id="nome_assistencia" name="nome_assistencia" value="{{ nome_assistencia|default('') }}" required autocomplete="organization">
+                            <input type="text" class="form-control" id="nome_assistencia" name="nome_assistencia"
+                                value="{{ nome_assistencia|default('') }}" required autocomplete="organization">
                             <small class="text-muted">Digite o nome da sua assistência técnica</small>
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">E-mail</label>
-                            <input type="email" class="form-control" id="email" name="email" value="{{ email|default('') }}" required>
+                            <input type="email" class="form-control" id="email" name="email"
+                                value="{{ email|default('') }}" required>
                         </div>
                         <div class="mb-3">
                             <label for="senha" class="form-label">Senha</label>
-                            <input type="password" class="form-control" id="senha" name="senha" value="{{ senha|default('') }}" required>
+                            <input type="password" class="form-control" id="senha" name="senha"
+                                value="{{ senha|default('') }}" required>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Gerar QR Code Pix</button>
                     </div>
@@ -497,12 +502,15 @@
                         <div class="qr-details">
                             <p>Use o QR Code ao lado ou copie o código Pix Copia e Cola para finalizar.</p>
                             <div class="qr-code-text" id="qrPayload">{{ qr_payload }}</div>
-                            <button class="btn btn-outline-primary w-100" id="btnCopiar" type="button">Copiar código</button>
+                            <button class="btn btn-outline-primary w-100" id="btnCopiar" type="button">Copiar
+                                código</button>
                         </div>
                     </div>
-                    <small class="text-muted">Assim que o pagamento for confirmado pela Wooxy, liberaremos seu login automaticamente.</small>
+                    <small class="text-muted">Assim que o pagamento for confirmado pela Wooxy, liberaremos seu login
+                        automaticamente.</small>
                     <div class="alert alert-info mt-3">
-                        <strong>Enviar comprovante para +5513991836523</strong> caso haja algum problema com a confirmação automática.
+                        <strong>Enviar comprovante para +5513991836523</strong> caso haja algum problema com a
+                        confirmação automática.
                     </div>
                 </div>
             </div>
