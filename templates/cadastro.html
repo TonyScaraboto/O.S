@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='whatsapp.css') }}">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <script src="{{ url_for('static', filename='js/neon.js') }}" defer></script>
 </head>
@@ -389,6 +390,24 @@
         <div class="form-wrapper">
             <h2>Cadastro da Assistência</h2>
 
+            <!-- Indicador de Progresso -->
+            <div class="progress-container" id="progressContainer" data-progress="1">
+                <div class="progress-step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Escolher Plano</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Preencher Dados</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Finalizar Pagamento</div>
+                </div>
+            </div>
+
             <!-- Seção de Planos -->
             <div class="section-plans">
                 <h3>Escolha seu Plano</h3>
@@ -460,13 +479,32 @@
         const form = document.getElementById('cadastroForm');
         const planRadios = document.querySelectorAll('.plan-card input[type="radio"]');
         const copiarBtn = document.getElementById('btnCopiar');
+        const progressContainer = document.getElementById('progressContainer');
+
+        function updateProgress(step) {
+            progressContainer.setAttribute('data-progress', step);
+            document.querySelectorAll('.progress-step').forEach((el, index) => {
+                el.classList.remove('active', 'completed');
+                if (index + 1 < step) {
+                    el.classList.add('completed');
+                } else if (index + 1 === step) {
+                    el.classList.add('active');
+                }
+            });
+        }
 
         planRadios.forEach((radio) => {
             radio.addEventListener('change', () => {
                 document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('active'));
                 radio.closest('.plan-card').classList.add('active');
+                updateProgress(2);
             });
         });
+
+        // If QR is shown, set to step 3
+        {% if mostrar_qr %}
+        updateProgress(3);
+        {% endif %}
 
         if (copiarBtn) {
             copiarBtn.addEventListener('click', async () => {
@@ -481,6 +519,11 @@
             });
         }
     </script>
+
+    <!-- WhatsApp Button -->
+    <a href="https://wa.me/5513991836523" target="_blank" class="whatsapp-float">
+        <i class="bi bi-whatsapp"></i>
+    </a>
 
 </body>
 
