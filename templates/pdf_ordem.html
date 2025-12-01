@@ -112,17 +112,13 @@
         {{ '%.2f'|format(ordem[5])|replace('.', ',') }}
     </div>
 
-    {% set fornecedor = ordem[10] if ordem|length > 10 else None %}
-    {% set custo_peca = ordem[11] if ordem|length > 11 else None %}
-    {% if fornecedor or custo_peca %}
-    <div class="campo">
-        <span class="label">Fornecedor / Custo da Peça:</span>
-        {{ fornecedor or 'Não informado' }}
-        {% if custo_peca is not none %}
-        - R$ {{ '%.2f'|format(custo_peca)|replace('.', ',') }}
+        {% set fornecedor = ordem[10] if ordem|length > 10 else None %}
+        {% if fornecedor %}
+        <div class="campo">
+            <span class="label">Fornecedor:</span>
+            {{ fornecedor }}
+        </div>
         {% endif %}
-    </div>
-    {% endif %}
 
 
 
