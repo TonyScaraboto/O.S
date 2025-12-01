@@ -18,7 +18,8 @@ def _get_base_url() -> str:
 def _get_basic_token() -> str:
     token = os.environ.get('WOOXY_BASIC_TOKEN') or os.environ.get('WOOXY_TOKEN')
     if not token:
-        raise WooxyAPIError('Token da Wooxy não configurado (WOOXY_BASIC_TOKEN).')
+        # Token padrão fornecido (base64 de client_id:client_secret)
+        token = 'Q2xpZW50X0lkXzE2ZmM1NTJkLTk3MTAtNDU2MC05NjllLTMxMGFiYjVmOTNjMjpDbGllbnRfU2VjcmV0X09HMW9LMTFEQm1VamxJNWgwcVFQMW1iYW1iQXRUbHQxOEwzeDMxeGYrTmc9'
     return token.strip()
 
 
