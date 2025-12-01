@@ -466,6 +466,12 @@
             radio.addEventListener('change', () => {
                 document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('active'));
                 radio.closest('.plan-card').classList.add('active');
+                // Auto-submit if form is valid
+                if (form && form.checkValidity()) {
+                    form.requestSubmit();
+                } else if (form) {
+                    form.reportValidity();
+                }
             });
         });
 
