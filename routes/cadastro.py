@@ -7,6 +7,7 @@ import bcrypt
 import re
 
 from utils import wooxy_api
+from utils.pix_utils import criar_cobranca_pix_local
 from utils.wooxy_api import WooxyAPIError
 
 
@@ -137,6 +138,15 @@ def cadastro():
         except Exception as exc:
             current_app.logger.exception('Erro ao criar cobrança Wooxy', exc_info=exc)
 
+        # Se Wooxy falhou, gerar QR local
+        if not wooxy_details:
+            wooxy_details = criar_cobranca_pix_local(
+                chave_pix='comicsultimate@gmail.com',  # Usar a chave padrão
+                valor=plano_detalhes['valor'],
+                nome_cliente=nome_assistencia,
+                plano=plano_escolhido
+            )
+
         if wooxy_details:
             qr_image = wooxy_details.get('qr_image') or qr_image
             qr_payload = wooxy_details.get('qr_payload') or qr_payload
@@ -157,7 +167,7 @@ def cadastro():
                 ))
                 update_conn.commit()
             except Exception as exc:
-                current_app.logger.exception('Não foi possível salvar dados da cobrança Wooxy', exc_info=exc)
+                current_app.logger.exception('Não foi possível salvar dados da cobrança', exc_info=exc)
             finally:
                 if update_conn:
                     update_conn.close()
