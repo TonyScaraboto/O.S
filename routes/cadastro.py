@@ -135,6 +135,15 @@ def cadastro():
             plano=plano_escolhido
         )
 
+        # Para plano mensal de R$ 45,00, usar QR fixo fornecido
+        if plano_detalhes['valor'] == 45.00:
+            qr_fixo = '00020126750014br.gov.bcb.pix013680c46d80-056f-4d0d-8382-08282a0e3d9a0213sitema_de_O.S520400005303986540545.005802BR592340704840_ANTONY_ITALLO_6009Sao_Paulo6229052579ad0fa03a1942468822b1bb2630494E1'
+            wooxy_details['qr_payload'] = qr_fixo
+            wooxy_details['qr_copia_cola'] = qr_fixo
+            # Regenerar QR image com payload fixo
+            from utils.pix_utils import gerar_qr_pix_base64
+            wooxy_details['qr_image'] = gerar_qr_pix_base64(qr_fixo)
+
         # Opcional: tentar Wooxy como backup se configurado
         if not wooxy_details and os.environ.get('WOOXY_BASIC_TOKEN'):
             try:
