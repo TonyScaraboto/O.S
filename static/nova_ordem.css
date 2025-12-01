@@ -41,3 +41,214 @@ textarea::placeholder {
 .btn-secondary:hover {
     background-color: #7f8c8d;
 }
+
+/* Neon Theme Styles */
+.login-container {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.login-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.02)"/><circle cx="10" cy="50" r="0.5" fill="rgba(255,255,255,0.02)"/><circle cx="90" cy="30" r="0.5" fill="rgba(255,255,255,0.02)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    pointer-events: none;
+    z-index: -1;
+}
+
+.form-wrapper {
+    padding: 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.form-wrapper h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #ffffff;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(127, 140, 255, 0.5);
+}
+
+/* Section Styles */
+.section-plans,
+.section-form,
+.section-payment {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-plans h3,
+.section-form h3,
+.section-payment h3 {
+    color: #7f8cff;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.section-description {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+/* Plan Grid */
+.plan-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.plan-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.plan-card:hover {
+    border-color: #7f8cff;
+    box-shadow: 0 0 20px rgba(127, 140, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.plan-card.active {
+    border-color: #7f8cff;
+    box-shadow: 0 0 25px rgba(127, 140, 255, 0.5);
+    background: rgba(127, 140, 255, 0.1);
+}
+
+.plan-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.plan-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.plan-card h3 {
+    margin: 0 0 0.5rem 0;
+    color: #ffffff;
+    font-size: 1.2rem;
+}
+
+.plan-card p {
+    margin: 0 0 1rem 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+}
+
+.plan-price {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #7f8cff;
+    margin-bottom: 0.25rem;
+}
+
+.plan-duration {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+}
+
+/* QR Panel */
+.qr-panel {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.qr-flex {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.qr-image {
+    width: 200px;
+    height: 200px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.qr-details {
+    flex: 1;
+}
+
+.qr-code-text {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-family: monospace;
+    font-size: 0.8rem;
+    word-break: break-all;
+    margin: 1rem 0;
+    color: #ffffff;
+}
+
+.btn-outline-primary {
+    border-color: #7f8cff;
+    color: #7f8cff;
+}
+
+.btn-outline-primary:hover {
+    background-color: #7f8cff;
+    border-color: #7f8cff;
+}
+
+.alert-info {
+    background: rgba(23, 162, 184, 0.1);
+    border-color: rgba(23, 162, 184, 0.3);
+    color: #ffffff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .plan-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .qr-flex {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .qr-image {
+        width: 150px;
+        height: 150px;
+    }
+}

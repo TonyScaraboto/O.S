@@ -390,87 +390,69 @@
         <div class="form-wrapper">
             <h2>Cadastro da Assistência</h2>
 
-            <!-- Indicador de Progresso -->
-            <div class="progress-container" id="progressContainer" data-progress="1">
-                <div class="progress-step active" data-step="1">
-                    <div class="step-number">1</div>
-                    <div class="step-label">Escolher Plano</div>
-                </div>
-                <div class="progress-line"></div>
-                <div class="progress-step" data-step="2">
-                    <div class="step-number">2</div>
-                    <div class="step-label">Preencher Dados</div>
-                </div>
-                <div class="progress-line"></div>
-                <div class="progress-step" data-step="3">
-                    <div class="step-number">3</div>
-                    <div class="step-label">Finalizar Pagamento</div>
+            <!-- Seção de Planos -->
+            <div class="section-plans">
+                <h3>Escolha seu Plano</h3>
+                <p class="section-description">Selecione o plano ideal para sua assistência técnica</p>
+                <div class="plan-grid">
+                    {% for plano in planos %}
+                    {% set selecionado = plano.id == plano_escolhido or (not plano_escolhido and loop.first) %}
+                    <label class="plan-card {% if selecionado %}active{% endif %}">
+                        <input type="radio" name="plano" value="{{ plano.id }}" {% if selecionado %}checked{% endif %} required>
+                        <div class="plan-badge">{{ plano.badge }}</div>
+                        <h3>{{ plano.titulo }}</h3>
+                        <p>{{ plano.descricao }}</p>
+                        <div class="plan-price">R$ {{ '%.2f'|format(plano.valor) }}</div>
+                        <span class="plan-duration">{% if plano.id == 'mensal' %}30 dias{% elif plano.id == 'trimestral' %}90 dias{% else %}12 meses{% endif %}</span>
+                    </label>
+                    {% endfor %}
                 </div>
             </div>
 
-            <form method="post" id="cadastroForm">
-                <div class="plan-wrapper visible">
-                    <p class="plan-helper">Escolha um plano para liberar o QR Code automático</p>
-                    <div class="plan-grid">
-                        {% for plano in planos %}
-                        {% set selecionado = plano.id == plano_escolhido or (not plano_escolhido and loop.first) %}
-                        <label class="plan-card {% if selecionado %}active{% endif %}">
-                            <input type="radio" name="plano" value="{{ plano.id }}" {% if selecionado %}checked{% endif
-                                %} required>
-                            <div class="plan-badge">{{ plano.badge }}</div>
-                            <h3>{{ plano.titulo }}</h3>
-                            <p>{{ plano.descricao }}</p>
-                            <div class="plan-price">R$ {{ '%.2f'|format(plano.valor) }}</div>
-                            <span class="plan-duration">{% if plano.id == 'mensal' %}30 dias{% elif plano.id ==
-                                'trimestral'
-                                %}90 dias{% else %}12 meses{% endif %}</span>
-                        </label>
-                        {% endfor %}
+            <!-- Seção de Dados -->
+            <div class="section-form">
+                <h3>Informações da Assistência</h3>
+                <form method="post" id="cadastroForm">
+                    <div class="mb-3">
+                        <label for="nome_assistencia" class="form-label">Nome da Assistência</label>
+                        <input type="text" class="form-control" id="nome_assistencia" name="nome_assistencia" value="{{ nome_assistencia|default('') }}" required autocomplete="organization">
+                        <small class="text-muted">Digite o nome da sua assistência técnica</small>
                     </div>
-                </div>
-                <div class="mb-3">
-                    <label for="nome_assistencia" class="form-label">Nome da Assistência</label>
-                    <input type="text" class="form-control" id="nome_assistencia" name="nome_assistencia"
-                        value="{{ nome_assistencia|default('') }}" required autocomplete="organization">
-                    <small class="text-muted">Os planos acima já estão disponíveis. Basta escolher um e preencher seus
-                        dados.</small>
-                </div>
-                <div class="mb-3">
-                    <label for="email" class="form-label">E-mail</label>
-                    <input type="email" class="form-control" id="email" name="email" value="{{ email|default('') }}"
-                        required>
-                </div>
-                <div class="mb-3">
-                    <label for="senha" class="form-label">Senha</label>
-                    <input type="password" class="form-control" id="senha" name="senha" value="{{ senha|default('') }}"
-                        required>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">Gerar QR Code Pix</button>
-            </form>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">E-mail</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ email|default('') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="senha" class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="senha" name="senha" value="{{ senha|default('') }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Gerar QR Code Pix</button>
+                </form>
+            </div>
 
             {% if mostrar_qr %}
-            <div class="qr-panel mt-4">
-                <h3>Finalize seu pagamento</h3>
+            <!-- Seção de Pagamento -->
+            <div class="section-payment">
+                <h3>Finalize seu Pagamento</h3>
                 <p class="text-muted">Plano selecionado: <strong>{{ plano_atual.titulo }}</strong></p>
-                <div class="qr-flex">
-                    <img src="{{ qr_image }}" alt="QR Code Pix" class="qr-image" loading="lazy">
-                    <div class="qr-details">
-                        <p>Use o QR Code ao lado ou copie o código Pix Copia e Cola para finalizar.</p>
-                        <div class="qr-code-text" id="qrPayload">{{ qr_payload }}</div>
-                        <button class="btn btn-outline-primary w-100" id="btnCopiar" type="button">Copiar
-                            código</button>
+                <div class="qr-panel">
+                    <div class="qr-flex">
+                        <img src="{{ qr_image }}" alt="QR Code Pix" class="qr-image" loading="lazy">
+                        <div class="qr-details">
+                            <p>Use o QR Code ao lado ou copie o código Pix Copia e Cola para finalizar.</p>
+                            <div class="qr-code-text" id="qrPayload">{{ qr_payload }}</div>
+                            <button class="btn btn-outline-primary w-100" id="btnCopiar" type="button">Copiar código</button>
+                        </div>
                     </div>
-                </div>
-                <small class="text-muted">Assim que o pagamento for confirmado pela Wooxy, liberaremos seu login
-                    automaticamente.</small>
-                <div class="alert alert-info mt-3">
-                    <strong>Enviar comprovante para +5513991836523</strong> caso haja algum problema com a confirmação
-                    automática.
+                    <small class="text-muted">Assim que o pagamento for confirmado pela Wooxy, liberaremos seu login automaticamente.</small>
+                    <div class="alert alert-info mt-3">
+                        <strong>Enviar comprovante para +5513991836523</strong> caso haja algum problema com a confirmação automática.
+                    </div>
                 </div>
             </div>
             {% endif %}
 
-            <div class="text-center mt-3">
+            <div class="text-center mt-4">
                 <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary w-100">Voltar para o login</a>
             </div>
         </div>
@@ -479,43 +461,13 @@
         const form = document.getElementById('cadastroForm');
         const planRadios = document.querySelectorAll('.plan-card input[type="radio"]');
         const copiarBtn = document.getElementById('btnCopiar');
-        const progressContainer = document.getElementById('progressContainer');
-
-        function updateProgress(step) {
-            progressContainer.setAttribute('data-progress', step);
-            document.querySelectorAll('.progress-step').forEach((el, index) => {
-                el.classList.remove('active', 'completed');
-                if (index + 1 < step) {
-                    el.classList.add('completed');
-                } else if (index + 1 === step) {
-                    el.classList.add('active');
-                }
-            });
-        }
 
         planRadios.forEach((radio) => {
             radio.addEventListener('change', () => {
                 document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('active'));
                 radio.closest('.plan-card').classList.add('active');
-                updateProgress(2);
-                if (form) {
-                    if (form.checkValidity()) {
-                        if (form.requestSubmit) {
-                            form.requestSubmit();
-                        } else {
-                            form.submit();
-                        }
-                    } else {
-                        form.reportValidity();
-                    }
-                }
             });
         });
-
-        // If QR is shown, set to step 3
-        {% if mostrar_qr %}
-        updateProgress(3);
-        {% endif %}
 
         if (copiarBtn) {
             copiarBtn.addEventListener('click', async () => {
