@@ -126,17 +126,30 @@ def cadastro():
         qr_image = url_for('static', filename='imagens/qr_placeholder.svg')
         qr_payload = f"PLANO:{plano_detalhes['titulo']} | VALOR:R$ {plano_detalhes['valor']:.2f}"
 
-        # Usar QR PIX local com chave real
-        pix_chave_real = os.environ.get('PIX_CHAVE_REAL', 'comicsultimate@gmail.com')
-        wooxy_details = criar_cobranca_pix_local(
-            chave_pix=pix_chave_real,
-            valor=plano_detalhes['valor'],
-            nome_cliente=nome_assistencia,
-            plano=plano_escolhido
-        )
+        # Tentar Wooxy primeiro para confirmação automática
+        wooxy_details = None
+        try:
+            wooxy_details = wooxy_api.create_charge(
+                valor=plano_detalhes['valor'],
+                plano=plano_escolhido,
+                nome_cliente=nome_assistencia,
+                email_cliente=email
+            )
+        except (WooxyAPIError, Exception) as exc:
+            current_app.logger.warning('Wooxy falhou, usando local: %s', exc)
 
-        # Para plano mensal de R$ 45,00, usar QR fixo fornecido
-        if plano_detalhes['valor'] == 45.00:
+        # Se Wooxy falhou, gerar QR local
+        if not wooxy_details:
+            pix_chave_real = os.environ.get('PIX_CHAVE_REAL', 'comicsultimate@gmail.com')
+            wooxy_details = criar_cobranca_pix_local(
+                chave_pix=pix_chave_real,
+                valor=plano_detalhes['valor'],
+                nome_cliente=nome_assistencia,
+                plano=plano_escolhido
+            )
+
+        # Para plano mensal de R$ 45,00, usar QR fixo fornecido (se Wooxy não foi usado)
+        if plano_detalhes['valor'] == 45.00 and not os.environ.get('WOOXY_BASIC_TOKEN'):
             qr_fixo = '00020126750014br.gov.bcb.pix013680c46d80-056f-4d0d-8382-08282a0e3d9a0213sitema_de_O.S520400005303986540545.005802BR592340704840_ANTONY_ITALLO_6009Sao_Paulo6229052579ad0fa03a1942468822b1bb2630494E1'
             wooxy_details['qr_payload'] = qr_fixo
             wooxy_details['qr_copia_cola'] = qr_fixo
