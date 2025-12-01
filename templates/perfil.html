@@ -57,8 +57,8 @@
 </div>
 </div>
 <!-- Modal de edição de perfil -->
-<div class="modal fade neon-modal" id="modalEditarPerfil" tabindex="-1"
-    aria-labelledby="modalEditarPerfilLabel" aria-hidden="true">
+<div class="modal fade neon-modal" id="modalEditarPerfil" tabindex="-1" aria-labelledby="modalEditarPerfilLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark text-white">
             <form method="post" enctype="multipart/form-data" action="{{ url_for('auth.perfil') }}">
@@ -69,10 +69,12 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-4 text-center">
-                        {% set foto_padrao = url_for('static', filename='fotos_perfil/' ~ foto_perfil) if foto_perfil and not foto_perfil.startswith('data:') else foto_perfil %}
+                        {% set foto_padrao = url_for('static', filename='fotos_perfil/' ~ foto_perfil) if foto_perfil
+                        and not foto_perfil.startswith('data:') else foto_perfil %}
                         {% if foto_perfil %}
                         <img src="{{ foto_padrao or foto_perfil }}" alt="Foto de Perfil" id="previewFotoPerfil"
-                            class="rounded-circle mb-2" style="width: 110px; height: 110px; object-fit: cover; border: 2px solid #fff;">
+                            class="rounded-circle mb-2"
+                            style="width: 110px; height: 110px; object-fit: cover; border: 2px solid #fff;">
                         {% else %}
                         <div id="previewFotoPerfil"
                             class="d-flex align-items-center justify-content-center rounded-circle border border-light mb-2"
