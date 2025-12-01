@@ -35,14 +35,13 @@ body.app-shell {
     background-image: url('data:image/svg+xml,%3Csvg xmlns%3D"http://www.w3.org/2000/svg" width%3D"160" height%3D"160" viewBox%3D"0 0 160 160"%3E%3Cpath fill%3D"rgba(255,255,255,0.035)" d%3D"M0 0h20v20H0z"/%3E%3C/svg%3E');
     opacity: 0.25;
     pointer-events: none;
-    z-index: 0;
+    z-index: -1;
 }
 
 .app-container {
     display: flex;
     min-height: 100vh;
     position: relative;
-    z-index: 1;
 }
 
 .app-sidebar {
