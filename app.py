@@ -45,3 +45,7 @@ def favicon():
         return send_from_directory(static_dir, 'favicon.ico', mimetype='image/x-icon')
     return send_from_directory(static_dir, 'favicon.svg', mimetype='image/svg+xml')
 
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
