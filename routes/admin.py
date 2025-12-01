@@ -1,5 +1,5 @@
 
-from flask import Blueprint, render_template, session, redirect, url_for, request
+from flask import Blueprint, render_template, session, redirect, url_for, request, flash
 from models.database import get_connection
 from datetime import datetime
 
@@ -43,7 +43,8 @@ def painel_admin():
         email = request.form.get('novo_email', '').strip()
         senha = request.form.get('nova_senha', '').strip()
         if nome_assistencia and email and senha:
-            senha_hash = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt())
+            senha_hash_bytes = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt())
+            senha_hash = senha_hash_bytes.decode('utf-8')
             data_cadastro = datetime.now().strftime('%Y-%m-%d')
             try:
                 cursor.execute('''INSERT INTO clientes (nome_assistencia, nome_usuario, email, senha, senha_pura, data_cadastro, trial_ativo, assinatura_ativa) VALUES (?, ?, ?, ?, ?, ?, 1, 0)''',
@@ -51,15 +52,22 @@ def painel_admin():
                 cursor.execute('''INSERT INTO usuarios (username, password, role) VALUES (?, ?, ?)''',
                     (email, senha_hash, 'cliente'))
                 conn.commit()
+                flash('Usuário criado com sucesso!', 'success')
             except Exception as e:
                 conn.rollback()
-                # Opcional: adicionar flash para erro
+                if 'UNIQUE' in str(e).upper():
+                    flash('Já existe um usuário com esse e-mail.', 'warning')
+                else:
+                    flash(f'Erro ao criar usuário: {e}', 'danger')
+        else:
+            flash('Preencha nome, e-mail e senha para criar o usuário.', 'warning')
 
     # Liberação manual de acesso
     if request.method == 'POST' and request.form.get('liberar_id'):
         liberar_id = request.form.get('liberar_id')
         cursor.execute('UPDATE clientes SET assinatura_ativa=1 WHERE id=?', (liberar_id,))
         conn.commit()
+        flash('Assinatura liberada com sucesso.', 'success')
 
     cursor.execute('SELECT id, nome_assistencia, email, senha_pura, data_cadastro, data_fim_trial, assinatura_ativa FROM clientes')
     clientes = cursor.fetchall()

@@ -7,6 +7,9 @@ import traceback
 import os
 from utils.image_storage import store_image
 
+MAX_FOTO_BYTES = 2 * 1024 * 1024  # 2 MB
+EXTENSOES_PERMITIDAS = {'png', 'jpg', 'jpeg', 'webp'}
+
 auth_bp = Blueprint('auth', __name__)
 
 
@@ -39,6 +42,17 @@ def perfil():
         if data_fim_trial:
             dias_trial_restantes = (datetime.strptime(data_fim_trial, '%Y-%m-%d') - datetime.now()).days
 
+    def _validar_imagem(foto_storage):
+        nome_arquivo = (foto_storage.filename or '').lower()
+        if '.' not in nome_arquivo or nome_arquivo.rsplit('.', 1)[-1] not in EXTENSOES_PERMITIDAS:
+            return False, 'Apenas imagens PNG, JPG ou WEBP são aceitas.'
+        foto_storage.stream.seek(0, os.SEEK_END)
+        tamanho = foto_storage.stream.tell()
+        foto_storage.stream.seek(0)
+        if tamanho > MAX_FOTO_BYTES:
+            return False, 'A foto precisa ter no máximo 2MB.'
+        return True, None
+
     if request.method == 'POST':
         novo_nome_assistencia = request.form.get('novo_nome_assistencia', '').strip()
         novo_nome_usuario = request.form.get('novo_nome_usuario', '').strip()
@@ -57,17 +71,24 @@ def perfil():
             session['nome_usuario'] = nome_usuario
             updated = True
         if foto and foto.filename:
-            prefixo = f"{nome_usuario or 'usuario'}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-            nome_arquivo, erro_upload = store_image(foto, 'fotos_perfil', prefixo)
-            if erro_upload:
-                flash(erro_upload, 'warning')
-            elif nome_arquivo:
-                cursor.execute('UPDATE clientes SET foto_perfil=? WHERE email=?', (nome_arquivo, user_email))
-                session['foto_perfil'] = nome_arquivo
-                foto_perfil = nome_arquivo
-                updated = True
+            valida, erro_validacao = _validar_imagem(foto)
+            if not valida:
+                flash(erro_validacao, 'warning')
+            else:
+                prefixo = f"{(novo_nome_usuario or nome_usuario or 'usuario')}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                nome_arquivo, erro_upload = store_image(foto, 'fotos_perfil', prefixo)
+                if erro_upload:
+                    flash(erro_upload, 'warning')
+                elif nome_arquivo:
+                    cursor.execute('UPDATE clientes SET foto_perfil=? WHERE email=?', (nome_arquivo, user_email))
+                    session['foto_perfil'] = nome_arquivo
+                    foto_perfil = nome_arquivo
+                    updated = True
         if updated:
             conn.commit()
+            flash('Perfil atualizado com sucesso!', 'success')
+        else:
+            flash('Nenhuma alteração detectada para salvar.', 'info')
         conn.close()
         return redirect(url_for('auth.perfil'))
 
