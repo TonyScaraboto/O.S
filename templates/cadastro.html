@@ -43,8 +43,8 @@
             box-shadow: 0 0 28px 2px #00bfff33, 0 0 0 1px #00bfff22;
             border: 1px solid rgba(0, 191, 255, 0.5);
             position: absolute;
-            top: 100;
-            left: 100;
+            top: 100%;
+            left: 100%;
             width: 100%;
             height: 100%;
             overflow-y: auto;
@@ -270,6 +270,106 @@
             .qr-image {
                 margin: 0 auto;
             }
+
+            .progress-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .progress-line {
+                width: 2px;
+                height: 20px;
+                margin: 5px 0;
+            }
+        }
+
+        /* Indicador de Progresso */
+        .progress-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 191, 255, 0.2);
+            border: 2px solid #00bfff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00bfff;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active .step-number {
+            background: #00bfff;
+            color: #0a1833;
+            box-shadow: 0 0 15px #00bfff;
+        }
+
+        .progress-step.completed .step-number {
+            background: #00ff88;
+            border-color: #00ff88;
+            color: #0a1833;
+        }
+
+        .step-label {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #9cc9ff;
+            text-align: center;
+            max-width: 100px;
+        }
+
+        .progress-step.active .step-label {
+            color: #00bfff;
+            font-weight: bold;
+        }
+
+        .progress-line {
+            width: 80px;
+            height: 2px;
+            background: rgba(0, 191, 255, 0.3);
+            margin: 0 10px;
+            position: relative;
+        }
+
+        .progress-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: #00bfff;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-container[data-progress="1"] .progress-line:nth-child(2)::after {
+            width: 0%;
+        }
+
+        .progress-container[data-progress="2"] .progress-line:nth-child(2)::after {
+            width: 100%;
+        }
+
+        .progress-container[data-progress="3"] .progress-line:nth-child(2)::after,
+        .progress-container[data-progress="3"] .progress-line:nth-child(4)::after {
+            width: 100%;
         }
     </style>
 
@@ -289,6 +389,25 @@
     <div class="login-container" style="position:relative; z-index:1;">
         <div class="form-wrapper">
             <h2>Cadastro da Assistência</h2>
+
+            <!-- Indicador de Progresso -->
+            <div class="progress-container" id="progressContainer" data-progress="1">
+                <div class="progress-step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Escolher Plano</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Preencher Dados</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Finalizar Pagamento</div>
+                </div>
+            </div>
+
             <form method="post" id="cadastroForm">
                 <div class="plan-wrapper visible">
                     <p class="plan-helper">Escolha um plano para liberar o QR Code automático</p>
@@ -360,11 +479,25 @@
         const form = document.getElementById('cadastroForm');
         const planRadios = document.querySelectorAll('.plan-card input[type="radio"]');
         const copiarBtn = document.getElementById('btnCopiar');
+        const progressContainer = document.getElementById('progressContainer');
+
+        function updateProgress(step) {
+            progressContainer.setAttribute('data-progress', step);
+            document.querySelectorAll('.progress-step').forEach((el, index) => {
+                el.classList.remove('active', 'completed');
+                if (index + 1 < step) {
+                    el.classList.add('completed');
+                } else if (index + 1 === step) {
+                    el.classList.add('active');
+                }
+            });
+        }
 
         planRadios.forEach((radio) => {
             radio.addEventListener('change', () => {
                 document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('active'));
                 radio.closest('.plan-card').classList.add('active');
+                updateProgress(2);
                 if (form) {
                     if (form.checkValidity()) {
                         if (form.requestSubmit) {
@@ -378,6 +511,11 @@
                 }
             });
         });
+
+        // If QR is shown, set to step 3
+        {% if mostrar_qr %}
+        updateProgress(3);
+        {% endif %}
 
         if (copiarBtn) {
             copiarBtn.addEventListener('click', async () => {

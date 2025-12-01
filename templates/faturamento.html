@@ -8,76 +8,231 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='whatsapp.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
     <style>
         body {
-            background-color: #121212;
+            background: linear-gradient(120deg, #0a1833 60%, #1a1a2e 100%);
             color: #fff;
+            font-family: 'Share Tech Mono', 'Orbitron', 'Segoe UI', monospace;
+            overflow-x: hidden;
+            overflow-y: auto;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            position: relative;
+        }
+
+        .fundo-neon {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        .linha-neon {
+            stroke: #1e90ff;
+            stroke-width: 2;
+            opacity: 0.2;
+            filter: drop-shadow(0 0 8px #00bfff) drop-shadow(0 0 16px #1e90ff);
+            transition: filter 0.2s;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header-faturamento {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header-faturamento h2 {
+            color: #00bfff;
+            text-shadow: 0 0 8px #1e90ff, 0 0 2px #00bfff;
+            font-family: 'Orbitron', 'Share Tech Mono', monospace;
+            letter-spacing: 2px;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
         }
 
         .balanco-box {
-            background-color: #000;
-            color: #fff;
-            border-left: 5px solid #5865f2;
-            padding: 40px;
-            margin: 0;
-            border-radius: 0;
-            width: 100vw;
-            min-height: 50vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            background: rgba(20, 30, 50, 0.92);
+            box-shadow: 0 0 28px 2px #00bfff33, 0 0 0 1px #00bfff22;
+            border: 1px solid rgba(0, 191, 255, 0.5);
+            border-radius: 18px;
+            padding: 3rem;
+            margin-bottom: 3rem;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .balanco-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(0, 191, 255, 0.05) 50%, transparent 70%);
+            pointer-events: none;
         }
 
         .balanco-box h5 {
-            color: #fff;
+            color: #00bfff;
             font-size: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
         }
 
         .balanco-box h3 {
-            font-size: 3rem;
-            margin: 20px 0;
+            font-size: 4rem;
+            font-weight: bold;
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .historico-card {
+            background: rgba(8, 20, 48, 0.85);
+            border: 1px solid #1e90ff55;
+            border-radius: 12px;
+            box-shadow: 0 0 18px #00bfff22;
+            margin-top: 2rem;
+        }
+
+        .historico-card .card-header {
+            background: rgba(0, 191, 255, 0.1);
+            border-bottom: 1px solid #1e90ff55;
+            color: #00bfff;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .historico-card .card-body {
+            padding: 2rem;
+        }
+
+        .lista-mensal {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .lista-mensal li {
+            background: rgba(0, 191, 255, 0.05);
+            border: 1px solid rgba(0, 191, 255, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .lista-mensal li:hover {
+            background: rgba(0, 191, 255, 0.1);
+            border-color: #00bfff;
+            transform: translateX(5px);
+        }
+
+        .lista-mensal strong {
+            color: #00bfff;
         }
 
         .btn-voltar {
-            margin-top: 30px;
+            background: linear-gradient(90deg, #00bfff 60%, #1e90ff 100%);
+            border: none;
+            box-shadow: 0 0 8px #00bfff88;
+            font-family: 'Share Tech Mono', 'Orbitron', monospace;
+            letter-spacing: 1px;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-top: 2rem;
+        }
+
+        .btn-voltar:hover {
+            background: #1e90ff;
+            box-shadow: 0 0 16px #00bfffcc;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header-faturamento h2 {
+                font-size: 2rem;
+            }
+
+            .balanco-box {
+                padding: 2rem;
+            }
+
+            .balanco-box h3 {
+                font-size: 3rem;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
+    <svg class="fundo-neon" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line class="linha-neon" x1="0" y1="100" x2="1920" y2="200" />
+        <line class="linha-neon" x1="0" y1="300" x2="1920" y2="400" />
+        <line class="linha-neon" x1="0" y1="500" x2="1920" y2="600" />
+        <line class="linha-neon" x1="0" y1="700" x2="1920" y2="800" />
+        <line class="linha-neon" x1="0" y1="900" x2="1920" y2="1000" />
+        <line class="linha-neon" x1="200" y1="0" x2="400" y2="1080" />
+        <line class="linha-neon" x1="800" y1="0" x2="1000" y2="1080" />
+        <line class="linha-neon" x1="1400" y1="0" x2="1600" y2="1080" />
+    </svg>
 
-        <div class="d-flex justify-content-between align-items-center mt-5 mb-4">
-            <h2 class="mb-0"><i class="bi bi-bar-chart-line-fill"></i> Painel de Faturamento Anual</h2>
-            <a href="{{ url_for('auth.perfil') }}" class="btn btn-outline-light">
-                <i class="bi bi-person-circle"></i> Perfil
-            </a>
+    <div class="container">
+        <div class="header-faturamento">
+            <h2><i class="bi bi-bar-chart-line-fill"></i> Painel de Faturamento Anual</h2>
+            <p class="text-muted">Acompanhe o desempenho financeiro da sua assistência</p>
         </div>
 
         <div class="balanco-box">
             <h5><i class="bi bi-cash-coin"></i> Balanço Anual da Assistência</h5>
-            <h3 class="text-success">R$ {{ faturamento }}</h3>
+            <h3>R$ {{ faturamento }}</h3>
         </div>
 
-        <!-- Histórico mensal -->
-        <div class="card bg-dark text-white mb-4 mt-4">
+        <div class="historico-card card">
             <div class="card-header">
                 <i class="bi bi-calendar3"></i> Faturamento dos Últimos Meses
             </div>
             <div class="card-body">
                 <ul class="lista-mensal">
                     {% for mes, valor in historico_mensal %}
-                    <li><strong>{{ mes }}:</strong> R$ {{ valor }}</li>
+                    <li>
+                        <span><strong>{{ mes }}:</strong></span>
+                        <span class="text-success">R$ {{ valor }}</span>
+                    </li>
                     {% endfor %}
                 </ul>
             </div>
         </div>
-        <!-- Botão corrigido para voltar ao dashboard -->
-        <a href="{{ url_for('ordens.dashboard') }}" class="btn btn-outline-light btn-voltar">
-            <i class="bi bi-arrow-left-circle"></i> Voltar ao Painel
-        </a>
+
+        <div class="text-center">
+            <a href="{{ url_for('ordens.dashboard') }}" class="btn btn-primary btn-voltar">
+                <i class="bi bi-arrow-left-circle"></i> Voltar ao Painel
+            </a>
+        </div>
     </div>
 
     <!-- WhatsApp Button Flutuante -->
