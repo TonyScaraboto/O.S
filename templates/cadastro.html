@@ -13,7 +13,7 @@
     <script src="{{ url_for('static', filename='js/neon.js') }}" defer></script>
 </head>
 
-<body style="height:100vh; margin:0; padding:0; overflow:hidden; background: #0a1833; position:relative;">
+<body style="min-height:100vh; margin:0; padding:0; overflow:auto; background:#0a1833; position:relative;">
     <!-- Fundo tecnológico com linhas azuis -->
     <svg id="br-linhas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0;"
         viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -42,23 +42,58 @@
             background: rgba(20, 30, 50, 0.92);
             box-shadow: 0 0 28px 2px #00bfff33, 0 0 0 1px #00bfff22;
             border: 1px solid rgba(0, 191, 255, 0.5);
-            position: absolute;
-            top: 100%;
-            left: 100%;
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            padding: clamp(20px, 3vw, 40px);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            max-width: 1200px;
+            margin: 40px auto 80px;
+            width: calc(100% - 32px);
+            border-radius: 20px;
+            padding: clamp(24px, 4vw, 48px);
         }
 
         .form-wrapper {
             width: 100%;
-            max-width: none;
-            padding: 0 40px;
+            padding: 0;
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .section-card {
+            background: rgba(8, 20, 48, 0.85);
+            border: 1px solid rgba(0, 191, 255, 0.25);
+            border-radius: 16px;
+            padding: clamp(18px, 2vw, 28px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(6px);
+        }
+
+        .section-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            color: #8fd6ff;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-card h3::before {
+            content: '';
+            width: 6px;
+            height: 24px;
+            border-radius: 999px;
+            background: linear-gradient(180deg, #00bfff, #1e90ff);
+            box-shadow: 0 0 12px rgba(0, 191, 255, 0.7);
+        }
+
+        .section-description {
+            color: #b3d7ff;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
         }
 
         .login-container h2 {
@@ -250,15 +285,16 @@
             }
 
             .login-container {
-                position: static;
-                width: auto;
-                height: auto;
                 margin: 1rem;
                 border-radius: 18px;
-                max-height: none;
+                width: calc(100% - 2rem);
             }
 
             .plan-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -408,49 +444,51 @@
                 </div>
             </div>
 
-            <!-- Seção de Planos -->
-            <div class="section-plans">
-                <h3>Escolha seu Plano</h3>
-                <p class="section-description">Selecione o plano ideal para sua assistência técnica</p>
-                <div class="plan-grid">
-                    {% for plano in planos %}
-                    {% set selecionado = plano.id == plano_escolhido or (not plano_escolhido and loop.first) %}
-                    <label class="plan-card {% if selecionado %}active{% endif %}">
-                        <input type="radio" name="plano" value="{{ plano.id }}" {% if selecionado %}checked{% endif %} required>
-                        <div class="plan-badge">{{ plano.badge }}</div>
-                        <h3>{{ plano.titulo }}</h3>
-                        <p>{{ plano.descricao }}</p>
-                        <div class="plan-price">R$ {{ '%.2f'|format(plano.valor) }}</div>
-                        <span class="plan-duration">{% if plano.id == 'mensal' %}30 dias{% elif plano.id == 'trimestral' %}90 dias{% else %}12 meses{% endif %}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-            </div>
+            <form method="post" id="cadastroForm">
+                <div class="section-grid">
+                    <!-- Seção de Planos -->
+                    <div class="section-card section-plans">
+                        <h3>Escolha seu Plano</h3>
+                        <p class="section-description">Selecione o plano ideal para sua assistência técnica</p>
+                        <div class="plan-grid">
+                            {% for plano in planos %}
+                            {% set selecionado = plano.id == plano_escolhido or (not plano_escolhido and loop.first) %}
+                            <label class="plan-card {% if selecionado %}active{% endif %}">
+                                <input type="radio" name="plano" value="{{ plano.id }}" {% if selecionado %}checked{% endif %} required>
+                                <div class="plan-badge">{{ plano.badge }}</div>
+                                <h3>{{ plano.titulo }}</h3>
+                                <p>{{ plano.descricao }}</p>
+                                <div class="plan-price">R$ {{ '%.2f'|format(plano.valor) }}</div>
+                                <span class="plan-duration">{% if plano.id == 'mensal' %}30 dias{% elif plano.id == 'trimestral' %}90 dias{% else %}12 meses{% endif %}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
 
-            <!-- Seção de Dados -->
-            <div class="section-form">
-                <h3>Informações da Assistência</h3>
-                <form method="post" id="cadastroForm">
-                    <div class="mb-3">
-                        <label for="nome_assistencia" class="form-label">Nome da Assistência</label>
-                        <input type="text" class="form-control" id="nome_assistencia" name="nome_assistencia" value="{{ nome_assistencia|default('') }}" required autocomplete="organization">
-                        <small class="text-muted">Digite o nome da sua assistência técnica</small>
+                    <!-- Seção de Dados -->
+                    <div class="section-card section-form">
+                        <h3>Informações da Assistência</h3>
+                        <div class="mb-3">
+                            <label for="nome_assistencia" class="form-label">Nome da Assistência</label>
+                            <input type="text" class="form-control" id="nome_assistencia" name="nome_assistencia" value="{{ nome_assistencia|default('') }}" required autocomplete="organization">
+                            <small class="text-muted">Digite o nome da sua assistência técnica</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-mail</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ email|default('') }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="senha" class="form-label">Senha</label>
+                            <input type="password" class="form-control" id="senha" name="senha" value="{{ senha|default('') }}" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Gerar QR Code Pix</button>
                     </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">E-mail</label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ email|default('') }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="senha" class="form-label">Senha</label>
-                        <input type="password" class="form-control" id="senha" name="senha" value="{{ senha|default('') }}" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Gerar QR Code Pix</button>
-                </form>
-            </div>
+                </div>
+            </form>
 
             {% if mostrar_qr %}
             <!-- Seção de Pagamento -->
-            <div class="section-payment">
+            <div class="section-card section-payment mt-4">
                 <h3>Finalize seu Pagamento</h3>
                 <p class="text-muted">Plano selecionado: <strong>{{ plano_atual.titulo }}</strong></p>
                 <div class="qr-panel">
@@ -482,6 +520,7 @@
         const progressContainer = document.getElementById('progressContainer');
 
         function updateProgress(step) {
+            if (!progressContainer) return;
             progressContainer.setAttribute('data-progress', step);
             document.querySelectorAll('.progress-step').forEach((el, index) => {
                 el.classList.remove('active', 'completed');
