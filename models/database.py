@@ -1,6 +1,7 @@
 import os
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
@@ -18,6 +19,7 @@ IS_POSTGRES = BASE_SCHEME in ('postgresql', 'postgres')
 IS_MYSQL = BASE_SCHEME == 'mysql'
 IS_SQLITE_URL = BASE_SCHEME == 'sqlite'
 DB_NAME = PARSED_DB_URL.path.lstrip('/') if PARSED_DB_URL and PARSED_DB_URL.path else None
+SERVERLESS_ENV = os.environ.get('VERCEL_ENV') or os.environ.get('RAILWAY_ENVIRONMENT')
 
 try:
     import psycopg2  # type: ignore
@@ -47,10 +49,21 @@ def _parse_db_url():
 DB_CONFIG = _parse_db_url()
 
 
+def _default_sqlite_path() -> str:
+    base_dir = Path(os.environ.get('ORDENS_DB_ROOT', Path(__file__).resolve().parent.parent))
+    storage_dir = base_dir / 'storage'
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    return str(storage_dir / 'ordens.db')
+
+
 def get_db_path():
+    custom_path = os.environ.get('ORDENS_DB_PATH')
+    if custom_path:
+        Path(custom_path).parent.mkdir(parents=True, exist_ok=True)
+        return custom_path
     if os.environ.get('VERCEL_ENV'):
-        return '/tmp/ordens.db'
-    return 'ordens.db'
+        return os.path.join('/tmp', 'ordens.db')
+    return _default_sqlite_path()
 
 
 class _ParamCursor:
@@ -147,6 +160,10 @@ def get_connection():
         return MySQLConnection()
     if IS_SQLITE_URL:
         return sqlite3.connect(_sqlite_path_from_url())
+    if SERVERLESS_ENV and not DATABASE_URL:
+        raise RuntimeError(
+            'DATABASE_URL não configurada. Configure um banco gerenciado (Postgres ou MySQL) nas variáveis do projeto.'
+        )
     return sqlite3.connect(get_db_path())
 
 

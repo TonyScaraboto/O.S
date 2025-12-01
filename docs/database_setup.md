@@ -8,6 +8,8 @@
 ## 2. Variáveis de ambiente
 A aplicação lê automaticamente um arquivo `.env` (graças ao `python-dotenv`). Use o modelo `.env.example` e ajuste os valores reais.
 
+> **Importante:** Em ambientes serverless (Vercel, Railway, etc.) a aplicação agora exige que `DATABASE_URL` esteja configurada. Sem ela, o app não sobe, evitando o antigo comportamento de criar um SQLite temporário em `/tmp` e perder os dados após cada deploy.
+
 ```
 DATABASE_URL=mysql+mysqlconnector://root:SUA_SENHA@localhost:3306/scartech_saas
 PGSSLMODE=require
@@ -35,6 +37,7 @@ Observações:
 ## 4. Checklist rápido
 - [ ] Instalar dependências: `pip install -r requirements.txt`.
 - [ ] Criar/ajustar `.env` com `DATABASE_URL`.
+- [ ] Em produção/Vercel, definir `DATABASE_URL` no painel do projeto.
 - [ ] Garantir que o MySQL aceita conexões externas (quando necessário).
 - [ ] Opcional: migrar dados antigos usando o passo 3.
 - [ ] Iniciar a aplicação (`python app.py` ou o comando de deploy) e validar login em múltiplas máquinas.

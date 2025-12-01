@@ -112,16 +112,6 @@
         {{ '%.2f'|format(ordem[5])|replace('.', ',') }}
     </div>
 
-        {% set fornecedor = ordem[10] if ordem|length > 10 else None %}
-        {% if fornecedor %}
-        <div class="campo">
-            <span class="label">Fornecedor:</span>
-            {{ fornecedor }}
-        </div>
-        {% endif %}
-
-
-
 
     <div class="campo">
         <span class="label">Data:</span>

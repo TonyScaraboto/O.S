@@ -130,47 +130,4 @@
         });
     </script>
 
-    <div class="card bg-dark text-white mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-truck"></i> Fornecedores & Custos Recentes</span>
-            <small class="text-muted">Lucro = Valor da O.S - custo da peça</small>
-        </div>
-        <div class="card-body">
-            {% if ordens_recentes %}
-            <div class="table-responsive">
-                <table class="table table-dark table-striped align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Cliente</th>
-                            <th>Aparelho</th>
-                            <th>Fornecedor</th>
-                            <th>Valor da Peça</th>
-                            <th>Valor O.S</th>
-                            <th>Lucro</th>
-                            <th>Data</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ordem in ordens_recentes %}
-                        {% set lucro = ordem.valor - ordem.custo %}
-                        <tr>
-                            <td>#{{ ordem.id }}</td>
-                            <td>{{ ordem.cliente_display }}</td>
-                            <td>{{ ordem.aparelho }}</td>
-                            <td>{{ ordem.fornecedor }}</td>
-                            <td>R$ {{ '%.2f'|format(ordem.custo)|replace('.', ',') }}</td>
-                            <td>R$ {{ '%.2f'|format(ordem.valor)|replace('.', ',') }}</td>
-                            <td class="text-success">R$ {{ '%.2f'|format(lucro)|replace('.', ',') }}</td>
-                            <td>{{ ordem.data }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="text-muted mb-0">Cadastre uma O.S para começar a acompanhar fornecedores e custos.</p>
-            {% endif %}
-        </div>
-    </div>
     {% endblock %}

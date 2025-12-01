@@ -38,9 +38,6 @@
                 <th>Aparelho</th>
                 <th>Defeito</th>
                 <th>Valor</th>
-                <th>Fornecedor</th>
-                <th>Valor da Peça</th>
-                <th>Lucro</th>
                 <th>Status</th>
                 <th>Imagem</th>
                 <th>Data</th>
@@ -50,14 +47,11 @@
         <tbody>
             {% if lista|length == 0 %}
             <tr>
-                <td colspan="14" class="text-center">Nenhuma ordem neste mês.</td>
+                <td colspan="11" class="text-center">Nenhuma ordem neste mês.</td>
             </tr>
             {% else %}
             {% for ordem in lista %}
             {% set cliente_display = ordem[9] if ordem|length > 9 and ordem[9] else ordem[1] %}
-            {% set fornecedor = ordem[10] if ordem|length > 10 else '' %}
-            {% set custo_peca = ordem[11] if ordem|length > 11 and ordem[11] is not none else 0 %}
-            {% set lucro = (ordem[5] or 0) - (custo_peca or 0) %}
             <tr class="os-row">
                 <td><strong>{{ ordem[3] }} - {{ cliente_display }}</strong></td>
                 <td>{{ ordem[0] }}</td>
@@ -66,9 +60,6 @@
                 <td class="os-aparelho">{{ ordem[3] }}</td>
                 <td>{{ ordem[4] }}</td>
                 <td>R$ {{ ordem[5] }}</td>
-                <td>{{ fornecedor or '—' }}</td>
-                <td>R$ {{ '%.2f'|format(custo_peca)|replace('.', ',') }}</td>
-                <td class="text-success">R$ {{ '%.2f'|format(lucro)|replace('.', ',') }}</td>
                 <td>
                     <form action="{{ url_for('ordens.atualizar_status', id=ordem[0]) }}" method="post">
                         <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">

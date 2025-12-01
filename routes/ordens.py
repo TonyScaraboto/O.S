@@ -23,42 +23,6 @@ def _sum_ordens(cursor, condition='', params=()):
     bruto, custo = cursor.fetchone() or (0, 0)
     return float(bruto or 0), float(custo or 0)
 
-
-def _buscar_ordens_recentes(cursor, user_email, is_admin, limite=5):
-    if is_admin:
-        cursor.execute(
-            '''
-            SELECT id, cliente, nome_cliente, aparelho, valor, custo_peca, fornecedor, data_criacao
-            FROM ordens
-            ORDER BY data_criacao DESC
-            LIMIT ?
-            ''',
-            (limite,)
-        )
-    else:
-        cursor.execute(
-            '''
-            SELECT id, cliente, nome_cliente, aparelho, valor, custo_peca, fornecedor, data_criacao
-            FROM ordens
-            WHERE cliente=?
-            ORDER BY data_criacao DESC
-            LIMIT ?
-            ''',
-            (user_email, limite)
-        )
-    ordens = []
-    for row in cursor.fetchall():
-        ordens.append({
-            'id': row[0],
-            'cliente_display': row[2] or row[1],
-            'aparelho': row[3],
-            'valor': float(row[4] or 0),
-            'custo': float(row[5] or 0),
-            'fornecedor': row[6] or '—',
-            'data': row[7]
-        })
-    return ordens
-
 # Rota para exibir ordens agrupadas por mês usando o template ordens_por_mes.html
 @ordens_bp.route('/ordens_por_mes')
 def ordens_por_mes():
@@ -144,7 +108,6 @@ def dashboard():
     if is_admin:
         ordens_bruto_mes, ordens_custo_mes = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ?', (mes_atual,))
         cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ?', (mes_atual,))
-        total_acessorios_mes = float(cursor.fetchone()[0] or 0)
     else:
         ordens_bruto_mes, ordens_custo_mes = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
         cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
@@ -175,7 +138,6 @@ def dashboard():
         valores_lucro.append(round(lucro, 2))
         historico_mensal.append({'mes': mes_ref, 'bruto': _format_currency(bruto), 'lucro': _format_currency(lucro)})
 
-    ordens_recentes = _buscar_ordens_recentes(cursor, user_email, is_admin)
     # Garantir todos os status possíveis
     status_possiveis = ['Recebido', 'Em análise', 'Concluído', 'Entregue']
     if is_admin:
@@ -201,7 +163,6 @@ def dashboard():
         status_counts=status_counts,
         dias_trial_restantes=dias_trial_restantes,
         data_fim_trial=data_fim_trial,
-        ordens_recentes=ordens_recentes
     )
 
 # Cadastro de nova ordem

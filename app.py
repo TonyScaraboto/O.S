@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-os.environ['ORDENS_DB_PATH'] = '/tmp/ordens.db'
 from models.database import init_db
 import click
 
