@@ -10,6 +10,55 @@ from utils.image_storage import store_image
 
 ordens_bp = Blueprint('ordens', __name__)
 
+
+def _format_currency(value):
+    return f"{float(value or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _sum_ordens(cursor, condition='', params=()):
+    sql = 'SELECT COALESCE(SUM(valor), 0), COALESCE(SUM(custo_peca), 0) FROM ordens'
+    if condition:
+        sql += f' WHERE {condition}'
+    cursor.execute(sql, params)
+    bruto, custo = cursor.fetchone() or (0, 0)
+    return float(bruto or 0), float(custo or 0)
+
+
+def _buscar_ordens_recentes(cursor, user_email, is_admin, limite=5):
+    if is_admin:
+        cursor.execute(
+            '''
+            SELECT id, cliente, nome_cliente, aparelho, valor, custo_peca, fornecedor, data_criacao
+            FROM ordens
+            ORDER BY data_criacao DESC
+            LIMIT ?
+            ''',
+            (limite,)
+        )
+    else:
+        cursor.execute(
+            '''
+            SELECT id, cliente, nome_cliente, aparelho, valor, custo_peca, fornecedor, data_criacao
+            FROM ordens
+            WHERE cliente=?
+            ORDER BY data_criacao DESC
+            LIMIT ?
+            ''',
+            (user_email, limite)
+        )
+    ordens = []
+    for row in cursor.fetchall():
+        ordens.append({
+            'id': row[0],
+            'cliente_display': row[2] or row[1],
+            'aparelho': row[3],
+            'valor': float(row[4] or 0),
+            'custo': float(row[5] or 0),
+            'fornecedor': row[6] or '—',
+            'data': row[7]
+        })
+    return ordens
+
 # Rota para exibir ordens agrupadas por mês usando o template ordens_por_mes.html
 @ordens_bp.route('/ordens_por_mes')
 def ordens_por_mes():
@@ -92,40 +141,41 @@ def dashboard():
     mes_atual = datetime.now().strftime('%Y-%m')
     user_email = session.get('user')
     is_admin = session.get('role') == 'admin'
-    # Para ordens, admin vê tudo; para acessórios, todos só veem os próprios
     if is_admin:
-        cursor.execute('SELECT SUM(valor) FROM ordens WHERE substr(data_criacao, 1, 7) = ?', (mes_atual,))
-        total_ordens_mes = cursor.fetchone()[0] or 0
-        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
-        total_acessorios_mes = cursor.fetchone()[0] or 0
+        ordens_bruto_mes, ordens_custo_mes = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ?', (mes_atual,))
+        cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ?', (mes_atual,))
+        total_acessorios_mes = float(cursor.fetchone()[0] or 0)
     else:
-        cursor.execute('SELECT SUM(valor) FROM ordens WHERE substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
-        total_ordens_mes = cursor.fetchone()[0] or 0
-        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
-        total_acessorios_mes = cursor.fetchone()[0] or 0
+        ordens_bruto_mes, ordens_custo_mes = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
+        cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
+        total_acessorios_mes = float(cursor.fetchone()[0] or 0)
 
-    faturamento_mensal = total_ordens_mes + total_acessorios_mes
+    faturamento_bruto = ordens_bruto_mes + total_acessorios_mes
+    faturamento_lucro = (ordens_bruto_mes - ordens_custo_mes) + total_acessorios_mes
 
     historico_mensal = []
     meses = []
-    valores = []
+    valores_lucro = []
+    valores_bruto = []
     for i in range(5, -1, -1):
         data_ref = datetime.now() - timedelta(days=30 * i)
         mes_ref = data_ref.strftime('%Y-%m')
         meses.append(mes_ref)
         if is_admin:
-            cursor.execute('SELECT SUM(valor) FROM ordens WHERE substr(data_criacao, 1, 7) = ?', (mes_ref,))
-            val_ordens = cursor.fetchone()[0] or 0
-            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
-            val_acess = cursor.fetchone()[0] or 0
+            val_ordens, custo_ordens = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ?', (mes_ref,))
+            cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ?', (mes_ref,))
+            val_acess = float(cursor.fetchone()[0] or 0)
         else:
-            cursor.execute('SELECT SUM(valor) FROM ordens WHERE substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
-            val_ordens = cursor.fetchone()[0] or 0
-            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
-            val_acess = cursor.fetchone()[0] or 0
-        valores.append(val_ordens + val_acess)
-        historico_mensal.append({'mes': mes_ref, 'valor': val_ordens + val_acess})
+            val_ordens, custo_ordens = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
+            cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
+            val_acess = float(cursor.fetchone()[0] or 0)
+        bruto = val_ordens + val_acess
+        lucro = (val_ordens - custo_ordens) + val_acess
+        valores_bruto.append(round(bruto, 2))
+        valores_lucro.append(round(lucro, 2))
+        historico_mensal.append({'mes': mes_ref, 'bruto': _format_currency(bruto), 'lucro': _format_currency(lucro)})
 
+    ordens_recentes = _buscar_ordens_recentes(cursor, user_email, is_admin)
     # Garantir todos os status possíveis
     status_possiveis = ['Recebido', 'Em análise', 'Concluído', 'Entregue']
     if is_admin:
@@ -141,14 +191,17 @@ def dashboard():
 
     return render_template(
         'dashboard.html',
-        faturamento_mensal=f"{faturamento_mensal:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        faturamento_mensal_bruto=_format_currency(faturamento_bruto),
+        faturamento_mensal_lucro=_format_currency(faturamento_lucro),
         historico_mensal=historico_mensal,
         meses=meses,
-        valores=valores,
+        valores_bruto=valores_bruto,
+        valores_lucro=valores_lucro,
         status_labels=status_labels,
         status_counts=status_counts,
         dias_trial_restantes=dias_trial_restantes,
-        data_fim_trial=data_fim_trial
+        data_fim_trial=data_fim_trial,
+        ordens_recentes=ordens_recentes
     )
 
 # Cadastro de nova ordem
@@ -185,9 +238,17 @@ def nova_ordem():
         defeito = request.form.get('defeito', '').strip()
         valor = request.form.get('valor', '').strip()
         status = request.form.get('status', 'Recebido')
+        fornecedor = request.form.get('fornecedor', '').strip()
+        custo_peca_raw = request.form.get('custo_peca', '').strip()
         data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         imagem_nome = None
         dono_email = session.get('user')
+
+        try:
+            custo_peca = float(custo_peca_raw.replace(',', '.')) if custo_peca_raw else 0.0
+        except ValueError:
+            erro = "Informe um valor válido para o custo da peça."
+            return render_template('nova_ordem.html', erro=erro)
 
         if 'foto_ordem' in request.files:
             foto = request.files['foto_ordem']
@@ -211,13 +272,13 @@ def nova_ordem():
                 cursor = conn.cursor()
                 if _ordens_tem_nome_cliente():
                     cursor.execute(
-                        'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao, nome_cliente) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        (dono_email, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao, nome_cliente)
+                        'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao, nome_cliente, fornecedor, custo_peca) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (dono_email, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao, nome_cliente, fornecedor, custo_peca)
                     )
                 else:
                     cursor.execute(
-                        'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                        (nome_cliente, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao)
+                        'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao, fornecedor, custo_peca) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (nome_cliente, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao, fornecedor, custo_peca)
                     )
                 conn.commit()
                 # Log para depuração
@@ -289,15 +350,13 @@ def faturamento():
     is_admin = session.get('role') == 'admin'
 
     if is_admin:
-        cursor.execute('SELECT SUM(valor) FROM ordens WHERE substr(data_criacao, 1, 4) = ?', (ano,))
-        total_ordens = cursor.fetchone()[0] or 0
-        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE substr(data_venda, 1, 4) = ? AND cliente=?', (ano, user_email))
-        total_acessorios = cursor.fetchone()[0] or 0
+        total_ordens_bruto, total_ordens_custo = _sum_ordens(cursor, 'substr(data_criacao, 1, 4) = ?', (ano,))
+        cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 4) = ?', (ano,))
+        total_acessorios = float(cursor.fetchone()[0] or 0)
     else:
-        cursor.execute('SELECT SUM(valor) FROM ordens WHERE substr(data_criacao, 1, 4) = ? AND cliente=?', (ano, user_email))
-        total_ordens = cursor.fetchone()[0] or 0
-        cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE substr(data_venda, 1, 4) = ? AND cliente=?', (ano, user_email))
-        total_acessorios = cursor.fetchone()[0] or 0
+        total_ordens_bruto, total_ordens_custo = _sum_ordens(cursor, 'substr(data_criacao, 1, 4) = ? AND cliente=?', (ano, user_email))
+        cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 4) = ? AND cliente=?', (ano, user_email))
+        total_acessorios = float(cursor.fetchone()[0] or 0)
 
     # Histórico dos últimos 6 meses
     historico_mensal = []
@@ -305,21 +364,27 @@ def faturamento():
         data_ref = datetime.now() - timedelta(days=30 * i)
         mes_ref = data_ref.strftime('%Y-%m')
         if is_admin:
-            cursor.execute('SELECT SUM(valor) FROM ordens WHERE substr(data_criacao, 1, 7) = ?', (mes_ref,))
-            val_ordens = cursor.fetchone()[0] or 0
-            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
-            val_acess = cursor.fetchone()[0] or 0
+            val_ordens, custo_ordens = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ?', (mes_ref,))
+            cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ?', (mes_ref,))
+            val_acess = float(cursor.fetchone()[0] or 0)
         else:
-            cursor.execute('SELECT SUM(valor) FROM ordens WHERE substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
-            val_ordens = cursor.fetchone()[0] or 0
-            cursor.execute('SELECT SUM(receita_total) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
-            val_acess = cursor.fetchone()[0] or 0
-        historico_mensal.append((mes_ref, f"{(val_ordens + val_acess):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")))
+            val_ordens, custo_ordens = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
+            cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
+            val_acess = float(cursor.fetchone()[0] or 0)
+        bruto = val_ordens + val_acess
+        lucro = (val_ordens - custo_ordens) + val_acess
+        historico_mensal.append({'mes': mes_ref, 'bruto': _format_currency(bruto), 'lucro': _format_currency(lucro)})
 
     conn.close()
-    faturamento_total = total_ordens + total_acessorios
+    faturamento_bruto = total_ordens_bruto + total_acessorios
+    faturamento_lucro = (total_ordens_bruto - total_ordens_custo) + total_acessorios
 
-    return render_template('faturamento.html', faturamento=faturamento_total, historico_mensal=historico_mensal)
+    return render_template(
+        'faturamento.html',
+        faturamento_bruto=_format_currency(faturamento_bruto),
+        faturamento_lucro=_format_currency(faturamento_lucro),
+        historico_mensal=historico_mensal
+    )
 
 # Acessórios - listagem
 @ordens_bp.route('/acessorios')

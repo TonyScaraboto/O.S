@@ -21,8 +21,17 @@
     {% endif %}
 
     <div class="balanco-box mb-4 p-4 bg-dark text-white rounded">
-        <h5><i class="bi bi-cash-coin"></i> Balanço Mensal da Assistência</h5>
-        <h3 class="text-success">R$ {{ faturamento_mensal }}</h3>
+        <h5 class="d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i> Balanço Mensal da Assistência</h5>
+        <div class="d-flex flex-column flex-md-row align-items-md-end gap-3">
+            <div>
+                <p class="text-uppercase text-muted mb-1 small">Lucro</p>
+                <h3 class="text-success mb-0">R$ {{ faturamento_mensal_lucro }}</h3>
+            </div>
+            <div>
+                <p class="text-uppercase text-muted mb-1 small">Bruto</p>
+                <h4 class="mb-0">R$ {{ faturamento_mensal_bruto }}</h4>
+            </div>
+        </div>
     </div>
 
     <div class="row">
@@ -56,7 +65,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const meses = JSON.parse('{{ meses | tojson | safe }}');
-        const valores = JSON.parse('{{ valores | tojson | safe }}');
+        const valoresLucro = JSON.parse('{{ valores_lucro | tojson | safe }}');
+        const valoresBruto = JSON.parse('{{ valores_bruto | tojson | safe }}');
         const statusLabels = JSON.parse('{{ status_labels | tojson | safe }}');
         const statusCounts = JSON.parse('{{ status_counts | tojson | safe }}');
 
@@ -64,17 +74,27 @@
             type: 'bar',
             data: {
                 labels: meses,
-                datasets: [{
-                    label: 'Faturamento (R$)',
-                    data: valores,
-                    backgroundColor: '#5865f2'
-                }]
+                datasets: [
+                    {
+                        label: 'Lucro (R$)',
+                        data: valoresLucro,
+                        backgroundColor: '#2ecc71'
+                    },
+                    {
+                        label: 'Bruto (R$)',
+                        data: valoresBruto,
+                        backgroundColor: 'rgba(88, 101, 242, 0.65)'
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }
+                    legend: {
+                        display: true,
+                        labels: { color: '#fff' }
+                    }
                 },
                 scales: {
                     y: {
@@ -109,4 +129,48 @@
             }
         });
     </script>
+
+    <div class="card bg-dark text-white mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-truck"></i> Fornecedores & Custos Recentes</span>
+            <small class="text-muted">Lucro = Valor da O.S - custo da peça</small>
+        </div>
+        <div class="card-body">
+            {% if ordens_recentes %}
+            <div class="table-responsive">
+                <table class="table table-dark table-striped align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Cliente</th>
+                            <th>Aparelho</th>
+                            <th>Fornecedor</th>
+                            <th>Valor da Peça</th>
+                            <th>Valor O.S</th>
+                            <th>Lucro</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ordem in ordens_recentes %}
+                        {% set lucro = ordem.valor - ordem.custo %}
+                        <tr>
+                            <td>#{{ ordem.id }}</td>
+                            <td>{{ ordem.cliente_display }}</td>
+                            <td>{{ ordem.aparelho }}</td>
+                            <td>{{ ordem.fornecedor }}</td>
+                            <td>R$ {{ '%.2f'|format(ordem.custo)|replace('.', ',') }}</td>
+                            <td>R$ {{ '%.2f'|format(ordem.valor)|replace('.', ',') }}</td>
+                            <td class="text-success">R$ {{ '%.2f'|format(lucro)|replace('.', ',') }}</td>
+                            <td>{{ ordem.data }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">Cadastre uma O.S para começar a acompanhar fornecedores e custos.</p>
+            {% endif %}
+        </div>
+    </div>
     {% endblock %}

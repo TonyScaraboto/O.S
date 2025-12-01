@@ -329,6 +329,8 @@ def init_db():
         '''
     )
     _ensure_column(cursor, 'ordens', 'nome_cliente', 'TEXT', None)
+    _ensure_column(cursor, 'ordens', 'fornecedor', 'TEXT', None)
+    _ensure_column(cursor, 'ordens', 'custo_peca', 'REAL DEFAULT 0', 0)
 
     acessorios_pk = _auto_increment_pk()
     cursor.execute(
