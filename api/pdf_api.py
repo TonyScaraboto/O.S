@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from models.database import get_connection
 from datetime import datetime
 from utils.pdf_utils import build_pdf_image_src
+from utils.ordem_utils import build_pdf_context
 
 pdf_api_bp = Blueprint('pdf_api', __name__)
 
@@ -18,7 +19,12 @@ def gerar_pdf_api(id):
 
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
+    user_email = session.get('user')
+    is_admin = session.get('role') == 'admin'
+    if is_admin:
+        cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
+    else:
+        cursor.execute('SELECT * FROM ordens WHERE id=? AND cliente=?', (id, user_email))
     ordem = cursor.fetchone()
     conn.close()
 
@@ -26,8 +32,9 @@ def gerar_pdf_api(id):
         return "Ordem não encontrada.", 404
 
     foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
+    pdf_context = build_pdf_context(ordem)
 
-    html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now())
+    html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context)
 
     # Permite enviar uma URL como fonte, se passado via query string (?url=...)
     source_url = request.args.get('url')
@@ -39,7 +46,7 @@ def gerar_pdf_api(id):
     api_key = os.environ.get('PDFSHIFT_API_KEY', PDFSHIFT_API_KEY)
     if not api_key:
         flash('API PDFShift não configurada.', 'danger')
-        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), erro_pdf='Configuração ausente')
+        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf='Configuração ausente')
 
     try:
         response = requests.post(
@@ -62,7 +69,7 @@ def gerar_pdf_api(id):
         )
     except requests.HTTPError as e:
         flash(f"Erro ao gerar PDF: {response.status_code} - {response.text}", "danger")
-        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), erro_pdf=response.text)
+        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf=response.text)
     except Exception as e:
         flash(f"Falha na comunicação com a API PDFShift: {str(e)}", "danger")
-        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), erro_pdf=str(e))
+        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf=str(e))

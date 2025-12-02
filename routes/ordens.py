@@ -7,12 +7,13 @@ from datetime import datetime, timedelta
 from routes.saas_guard import checar_trial_e_pagamento
 from utils.pdf_utils import build_pdf_image_src
 from utils.image_storage import store_image
+from utils.ordem_utils import build_pdf_context, format_currency as util_format_currency
 
 ordens_bp = Blueprint('ordens', __name__)
 
 
 def _format_currency(value):
-    return f"{float(value or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return util_format_currency(value)
 
 
 def _sum_ordens(cursor, condition='', params=()):
@@ -77,10 +78,16 @@ def gerar_pdf(id):
     if not ordem:
         return "Ordem não encontrada.", 404
 
-    
+    pdf_context = build_pdf_context(ordem)
     foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
     # PDF desativado para ambiente serverless
-    html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now())
+    html = render_template(
+        'pdf_ordem.html',
+        ordem=ordem,
+        foto_nome=foto_nome,
+        now=datetime.now(),
+        pdf_context=pdf_context,
+    )
     return html
 
  
