@@ -65,7 +65,12 @@ def gerar_pdf(id):
 
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
+    user_email = session.get('user')
+    is_admin = session.get('role') == 'admin'
+    if is_admin:
+        cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
+    else:
+        cursor.execute('SELECT * FROM ordens WHERE id=? AND cliente=?', (id, user_email))
     ordem = cursor.fetchone()
     conn.close()
 
@@ -472,7 +477,16 @@ def atualizar_status(id):
     novo_status = request.form.get('status', 'Pendente')
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('UPDATE ordens SET status=? WHERE id=?', (novo_status, id))
+    user_email = session.get('user')
+    is_admin = session.get('role') == 'admin'
+    if is_admin:
+        cursor.execute('UPDATE ordens SET status=? WHERE id=?', (novo_status, id))
+    else:
+        cursor.execute('UPDATE ordens SET status=? WHERE id=? AND cliente=?', (novo_status, id, user_email))
+        if cursor.rowcount == 0:
+            flash('Ordem não encontrada ou você não tem permissão para atualizá-la.', 'warning')
+            conn.close()
+            return redirect(url_for('ordens.listar_ordens'))
     conn.commit()
     conn.close()
     return redirect(url_for('ordens.listar_ordens'))
