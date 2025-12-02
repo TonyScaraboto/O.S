@@ -108,6 +108,7 @@ def dashboard():
     if is_admin:
         ordens_bruto_mes, ordens_custo_mes = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ?', (mes_atual,))
         cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ?', (mes_atual,))
+        total_acessorios_mes = float(cursor.fetchone()[0] or 0)
     else:
         ordens_bruto_mes, ordens_custo_mes = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
         cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
