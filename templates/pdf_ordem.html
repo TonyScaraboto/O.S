@@ -112,6 +112,12 @@
         {{ '%.2f'|format(ordem[5])|replace('.', ',') }}
     </div>
 
+    {% if ordem|length > 11 and ordem[11] %}
+    <div class="campo">
+        <span class="label">Custo da Peça (R$):</span>
+        {{ '%.2f'|format(ordem[11])|replace('.', ',') }}
+    </div>
+    {% endif %}
 
     <div class="campo">
         <span class="label">Data:</span>
