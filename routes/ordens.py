@@ -7,13 +7,17 @@ from datetime import datetime, timedelta
 from routes.saas_guard import checar_trial_e_pagamento
 from utils.pdf_utils import build_pdf_image_src
 from utils.image_storage import store_image
-from utils.ordem_utils import build_pdf_context, format_currency as util_format_currency
+from utils.ordem_utils import build_pdf_context, format_currency as util_format_currency, normalize_email
 
 ordens_bp = Blueprint('ordens', __name__)
 
 
 def _format_currency(value):
     return util_format_currency(value)
+
+
+def _normalize_email(value):
+    return normalize_email(value)
 
 
 def _sum_ordens(cursor, condition='', params=()):
@@ -36,12 +40,13 @@ def ordens_por_mes():
     conn = get_connection()
     cursor = conn.cursor()
     user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
     if is_admin:
         cursor.execute('SELECT * FROM ordens ORDER BY data_criacao DESC')
         todas_ordens = cursor.fetchall()
     else:
-        cursor.execute('SELECT * FROM ordens WHERE cliente=? ORDER BY data_criacao DESC', (user_email,))
+        cursor.execute('SELECT * FROM ordens WHERE LOWER(cliente)=? ORDER BY data_criacao DESC', (user_email_norm,))
         todas_ordens = cursor.fetchall()
     conn.close()
 
@@ -67,11 +72,12 @@ def gerar_pdf(id):
     conn = get_connection()
     cursor = conn.cursor()
     user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
     if is_admin:
         cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
     else:
-        cursor.execute('SELECT * FROM ordens WHERE id=? AND cliente=?', (id, user_email))
+        cursor.execute('SELECT * FROM ordens WHERE id=? AND LOWER(cliente)=?', (id, user_email_norm))
     ordem = cursor.fetchone()
     conn.close()
 
@@ -90,6 +96,9 @@ def gerar_pdf(id):
     )
     return html
 
+
+    def _normalize_email(value):
+        return normalize_email(value)
  
 @ordens_bp.route('/dashboard')
 
@@ -116,14 +125,15 @@ def dashboard():
 
     mes_atual = datetime.now().strftime('%Y-%m')
     user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
     if is_admin:
         ordens_bruto_mes, ordens_custo_mes = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ?', (mes_atual,))
         cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ?', (mes_atual,))
         total_acessorios_mes = float(cursor.fetchone()[0] or 0)
     else:
-        ordens_bruto_mes, ordens_custo_mes = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
-        cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_atual, user_email))
+        ordens_bruto_mes, ordens_custo_mes = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND LOWER(cliente)=?', (mes_atual, user_email_norm))
+        cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND LOWER(cliente)=?', (mes_atual, user_email_norm))
         total_acessorios_mes = float(cursor.fetchone()[0] or 0)
 
     faturamento_bruto = ordens_bruto_mes + total_acessorios_mes
@@ -142,8 +152,8 @@ def dashboard():
             cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ?', (mes_ref,))
             val_acess = float(cursor.fetchone()[0] or 0)
         else:
-            val_ordens, custo_ordens = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
-            cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
+            val_ordens, custo_ordens = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND LOWER(cliente)=?', (mes_ref, user_email_norm))
+            cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND LOWER(cliente)=?', (mes_ref, user_email_norm))
             val_acess = float(cursor.fetchone()[0] or 0)
         bruto = val_ordens + val_acess
         lucro = (val_ordens - custo_ordens) + val_acess
@@ -157,7 +167,7 @@ def dashboard():
         cursor.execute('SELECT status, COUNT(*) FROM ordens GROUP BY status')
         status_data = dict(cursor.fetchall())
     else:
-        cursor.execute('SELECT status, COUNT(*) FROM ordens WHERE cliente=? GROUP BY status', (user_email,))
+        cursor.execute('SELECT status, COUNT(*) FROM ordens WHERE LOWER(cliente)=? GROUP BY status', (user_email_norm,))
         status_data = dict(cursor.fetchall())
     status_labels = status_possiveis
     status_counts = [status_data.get(s, 0) for s in status_possiveis]
@@ -217,6 +227,7 @@ def nova_ordem():
         data_criacao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         imagem_nome = None
         dono_email = session.get('user')
+        dono_email_norm = _normalize_email(dono_email)
 
         try:
             custo_peca = float(custo_peca_raw.replace(',', '.')) if custo_peca_raw else 0.0
@@ -237,7 +248,7 @@ def nova_ordem():
                     if data_uri:
                         imagem_nome = data_uri
 
-        if not nome_cliente or not telefone or not aparelho or not defeito or not valor or not dono_email:
+        if not nome_cliente or not telefone or not aparelho or not defeito or not valor or not dono_email_norm:
             erro = "Preencha todos os campos obrigatórios."
         else:
             try:
@@ -247,7 +258,7 @@ def nova_ordem():
                 if _ordens_tem_nome_cliente():
                     cursor.execute(
                         'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao, nome_cliente, fornecedor, custo_peca) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        (dono_email, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao, nome_cliente, fornecedor, custo_peca)
+                        (dono_email_norm, telefone, aparelho, defeito, valor, status, imagem_nome, data_criacao, nome_cliente, fornecedor, custo_peca)
                     )
                 else:
                     cursor.execute(
@@ -256,7 +267,7 @@ def nova_ordem():
                     )
                 conn.commit()
                 # Log para depuração
-                print(f"Ordem criada: assistencia={dono_email}, cliente_final={nome_cliente}, aparelho={aparelho}, valor={valor}, data={data_criacao}")
+                print(f"Ordem criada: assistencia={dono_email_norm}, cliente_final={nome_cliente}, aparelho={aparelho}, valor={valor}, data={data_criacao}")
                 conn.close()
                 return redirect(url_for('ordens.listar_ordens'))
             except Exception as e:
@@ -278,12 +289,13 @@ def listar_ordens():
     conn = get_connection()
     cursor = conn.cursor()
     user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
     if is_admin:
         cursor.execute('SELECT * FROM ordens ORDER BY data_criacao DESC')
         todas_ordens = cursor.fetchall()
     else:
-        cursor.execute('SELECT * FROM ordens WHERE cliente=? ORDER BY data_criacao DESC', (user_email,))
+        cursor.execute('SELECT * FROM ordens WHERE LOWER(cliente)=? ORDER BY data_criacao DESC', (user_email_norm,))
         todas_ordens = cursor.fetchall()
     conn.close()
 
@@ -321,6 +333,7 @@ def faturamento():
     conn = get_connection()
     cursor = conn.cursor()
     user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
 
     if is_admin:
@@ -328,8 +341,8 @@ def faturamento():
         cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 4) = ?', (ano,))
         total_acessorios = float(cursor.fetchone()[0] or 0)
     else:
-        total_ordens_bruto, total_ordens_custo = _sum_ordens(cursor, 'substr(data_criacao, 1, 4) = ? AND cliente=?', (ano, user_email))
-        cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 4) = ? AND cliente=?', (ano, user_email))
+        total_ordens_bruto, total_ordens_custo = _sum_ordens(cursor, 'substr(data_criacao, 1, 4) = ? AND LOWER(cliente)=?', (ano, user_email_norm))
+        cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 4) = ? AND LOWER(cliente)=?', (ano, user_email_norm))
         total_acessorios = float(cursor.fetchone()[0] or 0)
 
     # Histórico dos últimos 6 meses
@@ -342,8 +355,8 @@ def faturamento():
             cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ?', (mes_ref,))
             val_acess = float(cursor.fetchone()[0] or 0)
         else:
-            val_ordens, custo_ordens = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
-            cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND cliente=?', (mes_ref, user_email))
+            val_ordens, custo_ordens = _sum_ordens(cursor, 'substr(data_criacao, 1, 7) = ? AND LOWER(cliente)=?', (mes_ref, user_email_norm))
+            cursor.execute('SELECT COALESCE(SUM(receita_total), 0) FROM acessorios WHERE substr(data_venda, 1, 7) = ? AND LOWER(cliente)=?', (mes_ref, user_email_norm))
             val_acess = float(cursor.fetchone()[0] or 0)
         bruto = val_ordens + val_acess
         lucro = (val_ordens - custo_ordens) + val_acess
@@ -373,10 +386,11 @@ def listar_acessorios():
     conn = get_connection()
     cursor = conn.cursor()
     user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
     # O admin agora só vê suas próprias vendas, igual aos outros usuários
-    cursor.execute('SELECT * FROM acessorios WHERE cliente=? ORDER BY data_venda DESC', (user_email,))
+    cursor.execute('SELECT * FROM acessorios WHERE LOWER(cliente)=? ORDER BY data_venda DESC', (user_email_norm,))
     vendas = cursor.fetchall()
-    cursor.execute('SELECT substr(data_venda, 1, 7) as mes, SUM(receita_total) FROM acessorios WHERE cliente=? GROUP BY mes ORDER BY mes DESC', (user_email,))
+    cursor.execute('SELECT substr(data_venda, 1, 7) as mes, SUM(receita_total) FROM acessorios WHERE LOWER(cliente)=? GROUP BY mes ORDER BY mes DESC', (user_email_norm,))
     historico_vendas = cursor.fetchall()
     conn.close()
 
@@ -403,7 +417,7 @@ def salvar_acessorio():
         return redirect(url_for('ordens.listar_acessorios'))
     receita_total = quantidade * preco_unitario
     data_venda = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    cliente = session.get('user')
+    cliente = _normalize_email(session.get('user'))
 
     # Se houver imagem de acessório, salvar corretamente
     imagem_nome = None
@@ -459,11 +473,12 @@ def remover_acessorio(id):
     conn = get_connection()
     cursor = conn.cursor()
     user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
     if is_admin:
         cursor.execute('DELETE FROM acessorios WHERE id = ?', (id,))
     else:
-        cursor.execute('DELETE FROM acessorios WHERE id = ? AND cliente = ?', (id, user_email))
+        cursor.execute('DELETE FROM acessorios WHERE id = ? AND LOWER(cliente) = ?', (id, user_email_norm))
         if cursor.rowcount == 0:
             flash('Não foi possível remover este acessório.', 'warning')
             conn.close()
@@ -485,11 +500,12 @@ def atualizar_status(id):
     conn = get_connection()
     cursor = conn.cursor()
     user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
     if is_admin:
         cursor.execute('UPDATE ordens SET status=? WHERE id=?', (novo_status, id))
     else:
-        cursor.execute('UPDATE ordens SET status=? WHERE id=? AND cliente=?', (novo_status, id, user_email))
+        cursor.execute('UPDATE ordens SET status=? WHERE id=? AND LOWER(cliente)=?', (novo_status, id, user_email_norm))
         if cursor.rowcount == 0:
             flash('Ordem não encontrada ou você não tem permissão para atualizá-la.', 'warning')
             conn.close()
@@ -535,11 +551,12 @@ def excluir_os(id):
     conn = get_connection()
     cursor = conn.cursor()
     user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
     if is_admin:
         cursor.execute('DELETE FROM ordens WHERE id=?', (id,))
     else:
-        cursor.execute('DELETE FROM ordens WHERE id=? AND cliente=?', (id, user_email))
+        cursor.execute('DELETE FROM ordens WHERE id=? AND LOWER(cliente)=?', (id, user_email_norm))
         if cursor.rowcount == 0:
             # Compatibilidade com registros antigos onde "cliente" guarda o nome
             cursor.execute('SELECT cliente FROM ordens WHERE id=?', (id,))

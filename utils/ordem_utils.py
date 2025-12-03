@@ -53,6 +53,10 @@ def cliente_display(ordem: Optional[Dict[str, Any]]) -> str:
     return (ordem.get('nome_cliente') or ordem.get('cliente') or '').strip()
 
 
+def normalize_email(value: Optional[str]) -> str:
+    return (value or '').strip().lower()
+
+
 def _cliente_from_row(row: Optional[Iterable[Any]]) -> str:
     if not row:
         return ''
