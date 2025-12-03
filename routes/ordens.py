@@ -20,6 +20,23 @@ def _normalize_email(value):
     return normalize_email(value)
 
 
+def _ordem_owner(ordem):
+    if not ordem or len(ordem) < 2:
+        return ''
+    return (ordem[1] or '').strip().lower()
+
+
+def _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
+    if is_admin:
+        return True
+    dono = _ordem_owner(ordem)
+    if not dono:
+        return True  # registros antigos sem email do dono
+    if '@' in dono:
+        return dono == user_email_norm
+    return True  # compatibilidade com registros legados
+
+
 def _sum_ordens(cursor, condition='', params=()):
     sql = 'SELECT COALESCE(SUM(valor), 0), COALESCE(SUM(custo_peca), 0) FROM ordens'
     if condition:
@@ -61,8 +78,6 @@ def ordens_por_mes():
 
     return render_template('ordens_por_mes.html', ordens_por_mes=ordens_por_mes)
 
-ordens_bp = Blueprint('ordens', __name__)
-
 # Geração de PDF da ordem
 @ordens_bp.route('/pdf_ordem/<int:id>')
 def gerar_pdf(id):
@@ -74,14 +89,11 @@ def gerar_pdf(id):
     user_email = session.get('user')
     user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
-    if is_admin:
-        cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
-    else:
-        cursor.execute('SELECT * FROM ordens WHERE id=? AND LOWER(cliente)=?', (id, user_email_norm))
+    cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
     ordem = cursor.fetchone()
     conn.close()
 
-    if not ordem:
+    if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
         return "Ordem não encontrada.", 404
 
     pdf_context = build_pdf_context(ordem)

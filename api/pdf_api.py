@@ -6,6 +6,7 @@ from models.database import get_connection
 from datetime import datetime
 from utils.pdf_utils import build_pdf_image_src
 from utils.ordem_utils import build_pdf_context
+from routes.ordens import _normalize_email, _usuario_pode_ver_ordem
 
 pdf_api_bp = Blueprint('pdf_api', __name__)
 
@@ -20,15 +21,13 @@ def gerar_pdf_api(id):
     conn = get_connection()
     cursor = conn.cursor()
     user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
-    if is_admin:
-        cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
-    else:
-        cursor.execute('SELECT * FROM ordens WHERE id=? AND cliente=?', (id, user_email))
+    cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
     ordem = cursor.fetchone()
     conn.close()
 
-    if not ordem:
+    if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
         return "Ordem não encontrada.", 404
 
     foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
