@@ -107,11 +107,6 @@ def gerar_pdf(id):
         pdf_context=pdf_context,
     )
     return html
-
-
-    def _normalize_email(value):
-        return normalize_email(value)
- 
 @ordens_bp.route('/dashboard')
 
 def dashboard():
