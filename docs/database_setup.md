@@ -8,7 +8,7 @@
 ## 2. Variáveis de ambiente
 A aplicação lê automaticamente um arquivo `.env` (graças ao `python-dotenv`). Use o modelo `.env.example` e ajuste os valores reais.
 
-> **Importante:** Em ambientes serverless (Vercel, Railway, etc.) a aplicação agora exige que `DATABASE_URL` esteja configurada. Sem ela, o app não sobe, evitando o antigo comportamento de criar um SQLite temporário em `/tmp` e perder os dados após cada deploy.
+> **Importante:** Em ambientes serverless (Vercel, Railway, etc.) a aplicação exige que `DATABASE_URL` esteja configurada para **Postgres ou MySQL**. URLs `sqlite://` não são suportadas em serverless e serão recusadas, pois levam à perda de dados.
 
 ```
 DATABASE_URL=mysql+mysqlconnector://root:SUA_SENHA@localhost:3306/scartech_saas
@@ -20,6 +20,7 @@ Observações:
 - Para o cenário informado (`root` e senha `jessicajasmim13!`), a URL fica:
   `mysql+mysqlconnector://root:jessicajasmim13%21@localhost:3306/scartech_saas`
 - Em produção, defina a mesma variável diretamente no painel do provedor (Vercel, etc.).
+ - Não use `sqlite://` no Vercel — configure um banco gerenciado (Railway, Render, PlanetScale, Neon, etc.).
 
 ## 3. Migração de dados do SQLite
 1. Faça backup do arquivo atual `ordens.db`.
