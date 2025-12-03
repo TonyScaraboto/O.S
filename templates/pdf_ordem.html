@@ -119,7 +119,8 @@
 
     <div class="campo">
         <span class="label">Valor (R$):</span>
-        {{ ctx.get('valor_formatado') or ('%.2f'|format(ordem[5])|replace('.', ',') if ordem and ordem|length > 5 else '0,00') }}
+        {{ ctx.get('valor_formatado') or ('%.2f'|format(ordem[5])|replace('.', ',') if ordem and ordem|length > 5 else
+        '0,00') }}
     </div>
 
     {% if ctx.get('custo_formatado') %}
