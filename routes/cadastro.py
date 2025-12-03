@@ -70,7 +70,8 @@ def cadastro():
                                    planos=planos, plano_escolhido=plano_escolhido)
 
         # Criptografa a senha
-        senha_hash = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt())
+        senha_hash_bytes = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt())
+        senha_hash = senha_hash_bytes.decode('utf-8')
 
         conn = None
         try:
@@ -98,7 +99,7 @@ def cadastro():
                 nome_assistencia,
                 nome_assistencia,
                 email,
-                senha_hash.decode('utf-8'),
+                senha_hash,
                 senha,
                 datetime.now().strftime('%Y-%m-%d'),
                 'comicsultimate@gmail.com',

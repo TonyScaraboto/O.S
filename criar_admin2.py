@@ -17,7 +17,7 @@ novo_admin = {
 }
 
 # Criptografa a senha
-senha_hash = bcrypt.hashpw(novo_admin['password'].encode('utf-8'), bcrypt.gensalt())
+senha_hash = bcrypt.hashpw(novo_admin['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
