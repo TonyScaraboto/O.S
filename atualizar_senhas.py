@@ -1,5 +1,6 @@
 import sqlite3
 import bcrypt
+from models.database import get_db_path
 
 def hash_if_needed(senha):
     if senha is None:
@@ -9,7 +10,7 @@ def hash_if_needed(senha):
     return bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def atualizar_senhas():
-    conn = sqlite3.connect('ordens.db')
+    conn = sqlite3.connect(get_db_path())
     cursor = conn.cursor()
     cursor.execute('SELECT id, password FROM usuarios')
     usuarios = cursor.fetchall()

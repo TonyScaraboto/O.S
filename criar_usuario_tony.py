@@ -1,9 +1,10 @@
 import sqlite3
 from datetime import datetime
+from models.database import get_db_path
 
 
 def main():
-	conn = sqlite3.connect('ordens.db')
+	conn = sqlite3.connect(get_db_path())
 	cursor = conn.cursor()
 	cursor.execute("DELETE FROM clientes WHERE email = ?", ('tony',))
 	cursor.execute("DELETE FROM usuarios WHERE username = ?", ('tony',))

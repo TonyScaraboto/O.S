@@ -1,6 +1,7 @@
 import sqlite3
+from models.database import get_db_path
 
-conn = sqlite3.connect('ordens.db')
+conn = sqlite3.connect(get_db_path())
 cursor = conn.cursor()
 
 try:
