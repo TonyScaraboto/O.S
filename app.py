@@ -5,6 +5,7 @@ from routes.cadastro import cadastro_bp
 from routes.admin import admin_bp
 from routes.assinatura import assinatura_bp
 from routes.webhook import webhook_bp
+from routes.status import status_bp
 from api.pdf_api import pdf_api_bp
 from dotenv import load_dotenv
 import os
@@ -28,6 +29,10 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(assinatura_bp)
 app.register_blueprint(webhook_bp)
 app.register_blueprint(pdf_api_bp)
+
+# Status routes only in dev or when explicitly enabled
+if app.debug or os.environ.get('ENABLE_STATUS_ROUTES') == '1':
+    app.register_blueprint(status_bp)
 
 
 # Rota principal para Vercel
