@@ -285,23 +285,42 @@ def init_db():
     cursor = conn.cursor()
 
     clientes_pk = _auto_increment_pk()
-    cursor.execute(
-        f'''
-        CREATE TABLE IF NOT EXISTS clientes (
-            id {clientes_pk},
-            nome_assistencia TEXT NOT NULL,
-            nome_usuario TEXT,
-            email TEXT UNIQUE NOT NULL,
-            senha TEXT NOT NULL,
-            data_cadastro TEXT NOT NULL,
-            trial_ativo INTEGER DEFAULT 1,
-            data_fim_trial TEXT,
-            assinatura_ativa INTEGER DEFAULT 0,
-            data_ultimo_pagamento TEXT,
-            pix_pagamento TEXT DEFAULT 'comicsultimate@gmail.com'
+    if IS_MYSQL:
+        cursor.execute(
+            f'''
+            CREATE TABLE IF NOT EXISTS clientes (
+                id {clientes_pk},
+                nome_assistencia TEXT NOT NULL,
+                nome_usuario TEXT,
+                email VARCHAR(191) NOT NULL UNIQUE,
+                senha TEXT NOT NULL,
+                data_cadastro TEXT NOT NULL,
+                trial_ativo INTEGER DEFAULT 1,
+                data_fim_trial TEXT,
+                assinatura_ativa INTEGER DEFAULT 0,
+                data_ultimo_pagamento TEXT,
+                pix_pagamento TEXT DEFAULT 'comicsultimate@gmail.com'
+            )
+            '''
         )
-        '''
-    )
+    else:
+        cursor.execute(
+            f'''
+            CREATE TABLE IF NOT EXISTS clientes (
+                id {clientes_pk},
+                nome_assistencia TEXT NOT NULL,
+                nome_usuario TEXT,
+                email TEXT UNIQUE NOT NULL,
+                senha TEXT NOT NULL,
+                data_cadastro TEXT NOT NULL,
+                trial_ativo INTEGER DEFAULT 1,
+                data_fim_trial TEXT,
+                assinatura_ativa INTEGER DEFAULT 0,
+                data_ultimo_pagamento TEXT,
+                pix_pagamento TEXT DEFAULT 'comicsultimate@gmail.com'
+            )
+            '''
+        )
 
     _ensure_column(cursor, 'clientes', 'foto_perfil', 'TEXT', None)
     _ensure_column(cursor, 'clientes', 'senha_pura', 'TEXT', None)
@@ -320,16 +339,28 @@ def init_db():
     _insert_default_client(cursor)
 
     usuarios_pk = _auto_increment_pk()
-    cursor.execute(
-        f'''
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id {usuarios_pk},
-            username TEXT UNIQUE,
-            password TEXT,
-            role TEXT
+    if IS_MYSQL:
+        cursor.execute(
+            f'''
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id {usuarios_pk},
+                username VARCHAR(191) UNIQUE,
+                password TEXT,
+                role TEXT
+            )
+            '''
         )
-        '''
-    )
+    else:
+        cursor.execute(
+            f'''
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id {usuarios_pk},
+                username TEXT UNIQUE,
+                password TEXT,
+                role TEXT
+            )
+            '''
+        )
 
     ordens_pk = _auto_increment_pk()
     cursor.execute(
