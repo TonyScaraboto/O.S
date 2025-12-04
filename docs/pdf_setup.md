@@ -7,6 +7,7 @@ Este projeto suporta geração de PDF via API PDFShift.
 - `PDFSHIFT_API_KEY`: sua chave da API PDFShift (obrigatória para baixar PDF).
 - `PDFSHIFT_URL`: opcional, endpoint da API. Padrão: `https://api.pdfshift.io/v3/convert/pdf`.
 - `ENABLE_STATUS_ROUTES=1`: opcional para habilitar rotas de diagnóstico em produção temporariamente.
+- `USE_WEASYPRINT=1` (apenas local): opcional para forçar o motor local WeasyPrint via query `?engine=weasy` ou em modo debug caso não exista chave PDFShift.
 
 ## Verificação rápida
 
@@ -20,6 +21,7 @@ Com as rotas de status habilitadas (`ENABLE_STATUS_ROUTES=1`), acesse:
 - Visualizar PDF no navegador: `GET /pdf_ordem/<id>`
 - Baixar PDF com PDFShift: `GET /pdf_ordem_api/<id>`
   - Aceita `?url=https://...` para gerar diretamente a partir de uma URL pública.
+  - Fallback local: `GET /pdf_ordem_api/<id>?engine=weasy` (requer dependências do WeasyPrint instaladas localmente).
 
 ## Requisitos
 
@@ -30,3 +32,4 @@ Com as rotas de status habilitadas (`ENABLE_STATUS_ROUTES=1`), acesse:
 
 - Em ambientes serverless, evite SQLite; configure `DATABASE_URL` para Postgres/MySQL conforme `docs/database_setup.md`.
 - Não exponha sua `PDFSHIFT_API_KEY` publicamente. As rotas de status nunca retornam o valor da chave, apenas se ela está presente.
+- Se o PDF ficar sem estilo, é esperado: o template embute CSS mínimo; CDNs externos (Bootstrap) podem ser bloqueados ou não carregados.
