@@ -86,6 +86,14 @@
 </head>
 
 <body>
+    {% if erro_pdf %}
+    <div class="alert alert-danger" role="alert">
+        <strong>Erro ao gerar PDF:</strong> {{ erro_pdf }}
+        {% if request and request.host %}
+        <div class="mt-1">Verifique a configuração do banco e do PDF no ambiente.</div>
+        {% endif %}
+    </div>
+    {% endif %}
 
     {% set ctx = pdf_context or {} %}
     {% set cliente_display = ctx.get('cliente') %}

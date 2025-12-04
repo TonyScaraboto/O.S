@@ -89,39 +89,46 @@ def gerar_pdf(id):
     if 'user' not in session:
         return redirect(url_for('auth.login'))
 
-    conn = get_connection()
-    cursor = conn.cursor()
-    user_email = session.get('user')
-    user_email_norm = _normalize_email(user_email)
-    is_admin = session.get('role') == 'admin'
-    cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
-    ordem = cursor.fetchone()
-    # Fallback: se não encontrar por id (links quebrados/DB alternado), pegar a última ordem do usuário
-    if not ordem:
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        user_email = session.get('user')
+        user_email_norm = _normalize_email(user_email)
+        is_admin = session.get('role') == 'admin'
+        cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
+        ordem = cursor.fetchone()
+        # Fallback: se não encontrar por id (links quebrados/DB alternado), pegar a última ordem do usuário
+        if not ordem:
+            try:
+                if is_admin:
+                    cursor.execute('SELECT * FROM ordens ORDER BY id DESC LIMIT 1')
+                else:
+                    cursor.execute('SELECT * FROM ordens WHERE LOWER(cliente)=? ORDER BY id DESC LIMIT 1', (user_email_norm,))
+                ordem = cursor.fetchone()
+            except Exception:
+                ordem = None
+        conn.close()
+
+        if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
+            return "Ordem não encontrada.", 404
+
+        pdf_context = build_pdf_context(ordem)
+        foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
+        html = render_template(
+            'pdf_ordem.html',
+            ordem=ordem,
+            foto_nome=foto_nome,
+            now=datetime.now(),
+            pdf_context=pdf_context,
+        )
+        return html
+    except Exception as e:
+        # Mostra erro amigável, útil no Vercel quando DATABASE_URL não está configurado
+        erro_msg = str(e)
         try:
-            if is_admin:
-                cursor.execute('SELECT * FROM ordens ORDER BY id DESC LIMIT 1')
-            else:
-                cursor.execute('SELECT * FROM ordens WHERE LOWER(cliente)=? ORDER BY id DESC LIMIT 1', (user_email_norm,))
-            ordem = cursor.fetchone()
+            return render_template('pdf_ordem.html', ordem=None, foto_nome=None, now=datetime.now(), pdf_context={}, erro_pdf=erro_msg), 500
         except Exception:
-            ordem = None
-    conn.close()
-
-    if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
-        return "Ordem não encontrada.", 404
-
-    pdf_context = build_pdf_context(ordem)
-    foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
-    # PDF desativado para ambiente serverless
-    html = render_template(
-        'pdf_ordem.html',
-        ordem=ordem,
-        foto_nome=foto_nome,
-        now=datetime.now(),
-        pdf_context=pdf_context,
-    )
-    return html
+            return f"Erro ao gerar PDF: {erro_msg}", 500
 @ordens_bp.route('/dashboard')
 
 def dashboard():
