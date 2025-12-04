@@ -1,6 +1,7 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, session, url_for
 import os
 import requests
+from datetime import datetime
 
 from models.database import (
     get_connection,
@@ -112,3 +113,59 @@ def pdf_status_test():
         return jsonify({'ok': ok, 'status_code': resp.status_code, 'size': len(resp.content or b'')}), (200 if ok else 502)
     except requests.RequestException as e:
         return jsonify({'ok': False, 'error': str(e)}), 502
+
+
+def _ordens_has_column(conn, column_name: str) -> bool:
+    try:
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(ordens)")
+        cols = [row[1] for row in cur.fetchall() or []]
+        return column_name in cols
+    except Exception:
+        return False
+
+
+@status_bp.route('/__status/seed_os', methods=['POST', 'GET'])
+def seed_os():
+    # Create a sample ordem for the current logged-in user to test PDF routes
+    user_email = session.get('user')
+    if not user_email:
+        return jsonify({'ok': False, 'error': 'login requerido'}), 401
+    email_norm = (user_email or '').strip().lower()
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        has_nome_cliente = _ordens_has_column(conn, 'nome_cliente')
+        if has_nome_cliente:
+            cur.execute(
+                'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao, nome_cliente, fornecedor, custo_peca) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (email_norm, '11999999999', 'Aparelho Teste', 'Defeito Teste', 100.0, 'Recebido', None, now, 'Cliente Teste', '', 0.0)
+            )
+        else:
+            cur.execute(
+                'INSERT INTO ordens (cliente, telefone, aparelho, defeito, valor, status, imagem, data_criacao, fornecedor, custo_peca) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (email_norm, '11999999999', 'Aparelho Teste', 'Defeito Teste', 100.0, 'Recebido', None, now, '', 0.0)
+            )
+        conn.commit()
+        # Recover id portable across engines
+        try:
+            cur.execute('SELECT id FROM ordens WHERE cliente=? AND data_criacao=? ORDER BY id DESC LIMIT 1', (email_norm, now))
+            row = cur.fetchone()
+            new_id = row[0] if row else None
+        except Exception:
+            new_id = None
+        try:
+            conn.close()
+        except Exception:
+            pass
+        if not new_id:
+            return jsonify({'ok': False, 'error': 'não foi possível recuperar o id da O.S criada'}), 500
+        return jsonify({
+            'ok': True,
+            'id': new_id,
+            'html_url': url_for('ordens.gerar_pdf', id=new_id, _external=False),
+            'pdf_url': url_for('pdf_api.gerar_pdf_api', id=new_id, _external=False),
+        })
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
