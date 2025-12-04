@@ -90,6 +90,16 @@ def gerar_pdf(id):
     is_admin = session.get('role') == 'admin'
     cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
     ordem = cursor.fetchone()
+    # Fallback: se não encontrar por id (links quebrados/DB alternado), pegar a última ordem do usuário
+    if not ordem:
+        try:
+            if is_admin:
+                cursor.execute('SELECT * FROM ordens ORDER BY id DESC LIMIT 1')
+            else:
+                cursor.execute('SELECT * FROM ordens WHERE LOWER(cliente)=? ORDER BY id DESC LIMIT 1', (user_email_norm,))
+            ordem = cursor.fetchone()
+        except Exception:
+            ordem = None
     conn.close()
 
     if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
