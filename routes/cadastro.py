@@ -10,6 +10,7 @@ from utils import wooxy_api
 from utils.pix_utils import criar_cobranca_pix_local
 from utils.wooxy_api import WooxyAPIError
 import os
+from utils.ordem_utils import normalize_email
 
 
 PLANOS_WOOXY = {
@@ -48,6 +49,7 @@ def cadastro():
             plano_escolhido = 'mensal'
         nome_assistencia = request.form['nome_assistencia']
         email = request.form['email']
+        email_norm = normalize_email(email)
         senha = request.form['senha']
         plano_detalhes = PLANOS_WOOXY.get(plano_escolhido)
         if not plano_detalhes:
@@ -98,7 +100,7 @@ def cadastro():
             ''', (
                 nome_assistencia,
                 nome_assistencia,
-                email,
+                email_norm,
                 senha_hash,
                 senha,
                 datetime.now().strftime('%Y-%m-%d'),
@@ -112,7 +114,7 @@ def cadastro():
             cursor.execute('''
                 INSERT INTO usuarios (username, password, role)
                 VALUES (?, ?, ?)
-            ''', (email, senha_hash, 'cliente'))
+            ''', (email_norm, senha_hash, 'cliente'))
             conn.commit()
         except Exception as e:
             if conn:
@@ -134,7 +136,7 @@ def cadastro():
                 valor=plano_detalhes['valor'],
                 plano=plano_escolhido,
                 nome_cliente=nome_assistencia,
-                email_cliente=email
+                email_cliente=email_norm
             )
         except (WooxyAPIError, Exception) as exc:
             current_app.logger.warning('Wooxy falhou, usando local: %s', exc)
@@ -165,7 +167,7 @@ def cadastro():
                     valor=plano_detalhes['valor'],
                     plano=plano_escolhido,
                     nome_cliente=nome_assistencia,
-                    email_cliente=email
+                    email_cliente=email_norm
                 )
             except (WooxyAPIError, Exception) as exc:
                 current_app.logger.warning('Wooxy falhou, usando local: %s', exc)
@@ -187,12 +189,12 @@ def cadastro():
                 cursor.execute('''
                     UPDATE clientes
                     SET wooxy_charge_id=?, wooxy_qr_code=?, wooxy_copia_cola=?
-                    WHERE email=?
+                    WHERE LOWER(email)=?
                 ''', (
                     wooxy_details.get('charge_id'),
                     qr_image,
                     copia_cola,
-                    email
+                    email_norm
                 ))
                 update_conn.commit()
             except Exception as exc:
