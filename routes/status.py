@@ -79,3 +79,15 @@ def db_status():
 
     # Never return the full DATABASE_URL to avoid leaking credentials
     return jsonify(info), 200
+
+
+@status_bp.route('/__status/pdf')
+def pdf_status():
+    # Minimal diagnostics for PDF generation configuration
+    pdfshift_url = os.environ.get('PDFSHIFT_URL', 'https://api.pdfshift.io/v3/convert/pdf')
+    pdfshift_key_present = bool(os.environ.get('PDFSHIFT_API_KEY'))
+    info = {
+        'pdfshift_url': pdfshift_url,
+        'pdfshift_key_present': pdfshift_key_present,
+    }
+    return jsonify(info), 200
