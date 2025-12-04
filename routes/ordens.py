@@ -30,9 +30,15 @@ def _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
     # Admin sempre pode ver
     if is_admin:
         return True
-    # Relaxa checagem para evitar falsos negativos em registros legados ou divergências
-    # de casing/formatação: se a ordem existe e o usuário está autenticado, permitir.
-    # A listagem já é filtrada por dono, então o acesso via UI tende a ser legítimo.
+    # ordem[1] = campo "cliente" (dono). Pode ser email, vazio ou um nome legado.
+    dono = _ordem_owner(ordem)
+    if not dono:
+        return True  # registros antigos sem dono explícito
+    dono_norm = _normalize_email(dono)
+    # Se parecer email, compare normalizado
+    if '@' in dono or '@' in user_email_norm:
+        return dono_norm == user_email_norm
+    # Se não tem @ (legado com nome), permitir acesso
     return True
 
 
