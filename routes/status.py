@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify
 import os
+import requests
 
 from models.database import (
     get_connection,
@@ -91,3 +92,23 @@ def pdf_status():
         'pdfshift_key_present': pdfshift_key_present,
     }
     return jsonify(info), 200
+
+
+@status_bp.route('/__status/pdf_test')
+def pdf_status_test():
+    url = os.environ.get('PDFSHIFT_URL', 'https://api.pdfshift.io/v3/convert/pdf')
+    api_key = os.environ.get('PDFSHIFT_API_KEY')
+    if not api_key:
+        return jsonify({'ok': False, 'error': 'PDFSHIFT_API_KEY ausente'}), 400
+    sample_html = '<html><head><title>Teste</title></head><body><h1>PDF OK</h1><p>Teste de conexão.</p></body></html>'
+    try:
+        resp = requests.post(
+            url,
+            headers={'X-API-Key': api_key},
+            json={'source': sample_html, 'use_print': True},
+            timeout=30,
+        )
+        ok = resp.status_code == 200 and resp.content and len(resp.content) > 500
+        return jsonify({'ok': ok, 'status_code': resp.status_code, 'size': len(resp.content or b'')}), (200 if ok else 502)
+    except requests.RequestException as e:
+        return jsonify({'ok': False, 'error': str(e)}), 502
