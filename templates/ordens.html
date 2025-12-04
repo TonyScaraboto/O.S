@@ -88,8 +88,7 @@
                     <a href="/pdf_ordem_api/{{ ordem[0] }}" class="btn btn-sm btn-success" target="_blank">
                         <i class="bi bi-download"></i> Baixar PDF
                     </a>
-                    <a href="{{ url_for('ordens.nova_ordem') }}" class="btn btn-sm btn-primary" target="_blank"
-                        onclick="setTimeout(function(){window.print();},500);return true;">
+                    <a href="/pdf_ordem/{{ ordem[0] }}?print=1" class="btn btn-sm btn-primary" target="_blank">
                         <i class="bi bi-printer"></i> Imprimir
                     </a>
                     <form action="{{ url_for('ordens.excluir_os', id=ordem[0]) }}" method="post"
