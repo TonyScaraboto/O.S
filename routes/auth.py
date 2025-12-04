@@ -149,6 +149,12 @@ def login():
                     session['role'] = role
                     cursor.execute('SELECT nome_assistencia, foto_perfil, nome_usuario FROM clientes WHERE LOWER(email)=?', (user_email_norm,))
                     cliente = cursor.fetchone()
+                    if not cliente:
+                        # Fallback: alguns cadastros manuais podem ter sido salvos sem domínio.
+                        user_no_domain = (user_email_norm.split('@')[0]) if user_email_norm else None
+                        if user_no_domain:
+                            cursor.execute('SELECT nome_assistencia, foto_perfil, nome_usuario FROM clientes WHERE LOWER(email)=?', (user_no_domain,))
+                            cliente = cursor.fetchone()
                     print(f"Cliente encontrado: {cliente}")
                     if cliente:
                         session['nome_assistencia'] = cliente[0]
@@ -173,6 +179,11 @@ def login():
                     # Verifica se assinatura está ativa (liberada)
                     cursor.execute('SELECT assinatura_ativa, nome_assistencia, foto_perfil, nome_usuario FROM clientes WHERE LOWER(email)=?', (user_email_norm,))
                     cliente = cursor.fetchone()
+                    if not cliente:
+                        user_no_domain = (user_email_norm.split('@')[0]) if user_email_norm else None
+                        if user_no_domain:
+                            cursor.execute('SELECT assinatura_ativa, nome_assistencia, foto_perfil, nome_usuario FROM clientes WHERE LOWER(email)=?', (user_no_domain,))
+                            cliente = cursor.fetchone()
                     print(f"Cliente encontrado: {cliente}")
                     if cliente:
                         assinatura_ativa = cliente[0]

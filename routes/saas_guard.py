@@ -15,6 +15,12 @@ def checar_trial_e_pagamento():
     cursor = conn.cursor()
     cursor.execute('SELECT data_fim_trial, assinatura_ativa FROM clientes WHERE LOWER(email)=?', (email_norm,))
     row = cursor.fetchone()
+    if not row:
+        # Fallback para cadastros manuais sem domínio
+        user_no_domain = (email_norm.split('@')[0]) if email_norm else None
+        if user_no_domain:
+            cursor.execute('SELECT data_fim_trial, assinatura_ativa FROM clientes WHERE LOWER(email)=?', (user_no_domain,))
+            row = cursor.fetchone()
     conn.close()
     if not row:
         flash('Conta não encontrada.','danger')
