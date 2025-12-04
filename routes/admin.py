@@ -40,7 +40,7 @@ def painel_admin():
     # Cadastro de novo usuário
     if request.method == 'POST' and request.form.get('criar_usuario') == '1':
         nome_assistencia = request.form.get('novo_nome_assistencia', '').strip()
-        email = request.form.get('novo_email', '').strip()
+        email = (request.form.get('novo_email', '') or '').strip().lower()
         senha = request.form.get('nova_senha', '').strip()
         if nome_assistencia and email and senha:
             senha_hash_bytes = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt())

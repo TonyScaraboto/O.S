@@ -6,6 +6,7 @@ import tempfile
 import traceback
 import os
 from utils.image_storage import store_image
+from utils.ordem_utils import normalize_email
 
 MAX_FOTO_BYTES = 2 * 1024 * 1024  # 2 MB
 EXTENSOES_PERMITIDAS = {'png', 'jpg', 'jpeg', 'webp'}
@@ -27,7 +28,8 @@ def perfil():
 
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT nome_assistencia, foto_perfil, nome_usuario, data_cadastro, data_fim_trial FROM clientes WHERE email=?', (user_email,))
+    email_norm = normalize_email(user_email) if user_email else None
+    cursor.execute('SELECT nome_assistencia, foto_perfil, nome_usuario, data_cadastro, data_fim_trial FROM clientes WHERE LOWER(email)=?', (email_norm,))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -61,12 +63,12 @@ def perfil():
         cursor = conn.cursor()
         updated = False
         if novo_nome_assistencia and novo_nome_assistencia != nome_assistencia:
-            cursor.execute('UPDATE clientes SET nome_assistencia=? WHERE email=?', (novo_nome_assistencia, user_email))
+            cursor.execute('UPDATE clientes SET nome_assistencia=? WHERE LOWER(email)=?', (novo_nome_assistencia, email_norm))
             nome_assistencia = novo_nome_assistencia
             session['nome_assistencia'] = nome_assistencia
             updated = True
         if novo_nome_usuario and novo_nome_usuario != nome_usuario:
-            cursor.execute('UPDATE clientes SET nome_usuario=? WHERE email=?', (novo_nome_usuario, user_email))
+            cursor.execute('UPDATE clientes SET nome_usuario=? WHERE LOWER(email)=?', (novo_nome_usuario, email_norm))
             nome_usuario = novo_nome_usuario
             session['nome_usuario'] = nome_usuario
             updated = True
@@ -80,7 +82,7 @@ def perfil():
                 if erro_upload:
                     flash(erro_upload, 'warning')
                 elif nome_arquivo:
-                    cursor.execute('UPDATE clientes SET foto_perfil=? WHERE email=?', (nome_arquivo, user_email))
+                    cursor.execute('UPDATE clientes SET foto_perfil=? WHERE LOWER(email)=?', (nome_arquivo, email_norm))
                     session['foto_perfil'] = nome_arquivo
                     foto_perfil = nome_arquivo
                     updated = True
@@ -111,6 +113,7 @@ def login():
         try:
             user = request.form['username']
             user_email = user if '@' in user else f"{user}@saas.com"
+            user_email_norm = normalize_email(user_email)
             pwd = request.form['password']
             print(f"Tentando login para usuário: {user}")
 
@@ -118,14 +121,22 @@ def login():
             cursor = conn.cursor()
 
             # Tenta login por username
-            cursor.execute('SELECT password, role FROM usuarios WHERE username=?', (user,))
-            row = cursor.fetchone()
-            print(f"Resultado busca por username: {row}")
-            # Se não encontrar, tenta por email
-            if not row:
-                cursor.execute('SELECT password, role FROM usuarios WHERE username=?', (user.replace('@saas.com',''),))
+            # Tentar autenticar por múltiplas chaves (ordem: como digitou, lowercase, email normalizado, user sem domínio)
+            row = None
+            for candidate, as_lower in (
+                (user, False),
+                (user.lower(), False),
+                (user_email_norm, True),
+                (user.replace('@saas.com',''), False),
+            ):
+                if row:
+                    break
+                if as_lower:
+                    cursor.execute('SELECT password, role FROM usuarios WHERE LOWER(username)=?', (candidate,))
+                else:
+                    cursor.execute('SELECT password, role FROM usuarios WHERE username=?', (candidate,))
                 row = cursor.fetchone()
-                print(f"Resultado busca por email: {row}")
+            print(f"Resultado busca usuario: {row}")
 
             if row:
                 senha_hash = row[0]
@@ -134,9 +145,9 @@ def login():
                 # Permite login do admin e tecnico com senha em texto puro
                 if (user == 'admin' and pwd == 'admin123') or (user == 'tecnico' and pwd == 'tecnico123') or (user == 'admin@saas.com' and pwd == 'admin123'):
                     print("Login texto puro permitido")
-                    session['user'] = user_email
+                    session['user'] = user_email_norm
                     session['role'] = role
-                    cursor.execute('SELECT nome_assistencia, foto_perfil, nome_usuario FROM clientes WHERE email=?', (user_email,))
+                    cursor.execute('SELECT nome_assistencia, foto_perfil, nome_usuario FROM clientes WHERE LOWER(email)=?', (user_email_norm,))
                     cliente = cursor.fetchone()
                     print(f"Cliente encontrado: {cliente}")
                     if cliente:
@@ -145,7 +156,7 @@ def login():
                         session['nome_usuario'] = cliente[2] or user_email
                     else:
                         session['nome_assistencia'] = 'Admin'
-                        session['nome_usuario'] = user_email
+                        session['nome_usuario'] = user_email_norm
                         session['foto_perfil'] = None
                     conn.close()
                     resp = make_response(redirect(url_for('ordens.dashboard')))
@@ -160,7 +171,7 @@ def login():
                 if senha_hash and bcrypt.checkpw(pwd.encode('utf-8'), senha_hash_bytes):
                     print("Senha hash válida")
                     # Verifica se assinatura está ativa (liberada)
-                    cursor.execute('SELECT assinatura_ativa, nome_assistencia, foto_perfil, nome_usuario FROM clientes WHERE email=?', (user_email,))
+                    cursor.execute('SELECT assinatura_ativa, nome_assistencia, foto_perfil, nome_usuario FROM clientes WHERE LOWER(email)=?', (user_email_norm,))
                     cliente = cursor.fetchone()
                     print(f"Cliente encontrado: {cliente}")
                     if cliente:
@@ -171,12 +182,12 @@ def login():
                             return render_template('login.html', error='Acesso ainda não liberado pelo administrador.', current_year=datetime.now().year, last_user=user)
                         session['nome_assistencia'] = cliente[1]
                         session['foto_perfil'] = cliente[2] if cliente[2] else None
-                        session['nome_usuario'] = cliente[3] or user_email
+                        session['nome_usuario'] = cliente[3] or user_email_norm
                     else:
-                        session['nome_assistencia'] = user_email
-                        session['nome_usuario'] = user_email
+                        session['nome_assistencia'] = user_email_norm
+                        session['nome_usuario'] = user_email_norm
                         session['foto_perfil'] = None
-                    session['user'] = user_email
+                    session['user'] = user_email_norm
                     session['role'] = role
                     conn.close()
                     resp = make_response(redirect(url_for('ordens.dashboard')))
