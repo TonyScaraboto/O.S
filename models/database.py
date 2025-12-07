@@ -287,21 +287,28 @@ def init_db():
     clientes_pk = _auto_increment_pk()
     if IS_MYSQL:
         cursor.execute(
-            f'''
+            """
             CREATE TABLE IF NOT EXISTS clientes (
-                id {clientes_pk},
-                nome_assistencia TEXT NOT NULL,
-                nome_usuario TEXT,
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                nome_assistencia VARCHAR(255) NOT NULL,
+                nome_usuario VARCHAR(255),
                 email VARCHAR(191) NOT NULL UNIQUE,
-                senha TEXT NOT NULL,
-                data_cadastro TEXT NOT NULL,
-                trial_ativo INTEGER DEFAULT 1,
-                data_fim_trial TEXT,
-                assinatura_ativa INTEGER DEFAULT 0,
-                data_ultimo_pagamento TEXT,
-                pix_pagamento TEXT DEFAULT 'comicsultimate@gmail.com'
+                senha VARCHAR(255) NOT NULL,
+                senha_pura VARCHAR(255),
+                data_cadastro DATE NOT NULL,
+                trial_ativo TINYINT(1) DEFAULT 1,
+                data_fim_trial DATE,
+                assinatura_ativa TINYINT(1) DEFAULT 0,
+                data_ultimo_pagamento DATE,
+                pix_pagamento VARCHAR(255) DEFAULT 'comicsultimate@gmail.com',
+                foto_perfil TEXT,
+                plano_nome VARCHAR(255),
+                plano_valor DECIMAL(10,2),
+                wooxy_charge_id VARCHAR(255),
+                wooxy_qr_code TEXT,
+                wooxy_copia_cola TEXT
             )
-            '''
+            """
         )
     else:
         cursor.execute(
@@ -312,43 +319,60 @@ def init_db():
                 nome_usuario TEXT,
                 email TEXT UNIQUE NOT NULL,
                 senha TEXT NOT NULL,
+                senha_pura TEXT,
                 data_cadastro TEXT NOT NULL,
                 trial_ativo INTEGER DEFAULT 1,
                 data_fim_trial TEXT,
                 assinatura_ativa INTEGER DEFAULT 0,
                 data_ultimo_pagamento TEXT,
-                pix_pagamento TEXT DEFAULT 'comicsultimate@gmail.com'
+                pix_pagamento TEXT DEFAULT 'comicsultimate@gmail.com',
+                foto_perfil TEXT,
+                plano_nome TEXT,
+                plano_valor REAL,
+                wooxy_charge_id TEXT,
+                wooxy_qr_code TEXT,
+                wooxy_copia_cola TEXT
             )
             '''
         )
 
+    pix_col_def = "VARCHAR(255) DEFAULT 'comicsultimate@gmail.com'" if IS_MYSQL else "TEXT DEFAULT 'comicsultimate@gmail.com'"
+    assinatura_def = 'TINYINT(1) DEFAULT 0' if IS_MYSQL else 'INTEGER DEFAULT 0'
+    trial_def = 'TINYINT(1) DEFAULT 1' if IS_MYSQL else 'INTEGER DEFAULT 1'
+    data_cadastro_def = 'DATE' if IS_MYSQL else 'TEXT'
+    data_fim_def = 'DATE' if IS_MYSQL else 'TEXT'
+    plano_nome_def = 'VARCHAR(255)' if IS_MYSQL else 'TEXT'
+    plano_valor_def = 'DECIMAL(10,2)' if IS_MYSQL else 'REAL'
+    wooxy_charge_def = 'VARCHAR(255)' if IS_MYSQL else 'TEXT'
+    nome_usuario_def = 'VARCHAR(255)' if IS_MYSQL else 'TEXT'
+
     _ensure_column(cursor, 'clientes', 'foto_perfil', 'TEXT', None)
-    _ensure_column(cursor, 'clientes', 'senha_pura', 'TEXT', None)
-    _ensure_column(cursor, 'clientes', 'pix_pagamento', "TEXT DEFAULT 'comicsultimate@gmail.com'", 'comicsultimate@gmail.com')
-    _ensure_column(cursor, 'clientes', 'assinatura_ativa', 'INTEGER DEFAULT 0', 0)
-    _ensure_column(cursor, 'clientes', 'trial_ativo', 'INTEGER DEFAULT 1', 1)
-    _ensure_column(cursor, 'clientes', 'data_cadastro', 'TEXT', datetime.now().strftime('%Y-%m-%d'))
-    _ensure_column(cursor, 'clientes', 'data_fim_trial', 'TEXT', None)
-    _ensure_column(cursor, 'clientes', 'plano_nome', 'TEXT', None)
-    _ensure_column(cursor, 'clientes', 'plano_valor', 'REAL', None)
-    _ensure_column(cursor, 'clientes', 'wooxy_charge_id', 'TEXT', None)
+    _ensure_column(cursor, 'clientes', 'senha_pura', 'VARCHAR(255)' if IS_MYSQL else 'TEXT', None)
+    _ensure_column(cursor, 'clientes', 'pix_pagamento', pix_col_def, 'comicsultimate@gmail.com')
+    _ensure_column(cursor, 'clientes', 'assinatura_ativa', assinatura_def, 0)
+    _ensure_column(cursor, 'clientes', 'trial_ativo', trial_def, 1)
+    _ensure_column(cursor, 'clientes', 'data_cadastro', data_cadastro_def, datetime.now().strftime('%Y-%m-%d'))
+    _ensure_column(cursor, 'clientes', 'data_fim_trial', data_fim_def, None)
+    _ensure_column(cursor, 'clientes', 'plano_nome', plano_nome_def, None)
+    _ensure_column(cursor, 'clientes', 'plano_valor', plano_valor_def, None)
+    _ensure_column(cursor, 'clientes', 'wooxy_charge_id', wooxy_charge_def, None)
     _ensure_column(cursor, 'clientes', 'wooxy_qr_code', 'TEXT', None)
     _ensure_column(cursor, 'clientes', 'wooxy_copia_cola', 'TEXT', None)
-    _ensure_column(cursor, 'clientes', 'nome_usuario', 'TEXT', None)
+    _ensure_column(cursor, 'clientes', 'nome_usuario', nome_usuario_def, None)
     cursor.execute('UPDATE clientes SET nome_usuario = nome_assistencia WHERE nome_usuario IS NULL OR nome_usuario = ?', ('',))
     _insert_default_client(cursor)
 
     usuarios_pk = _auto_increment_pk()
     if IS_MYSQL:
         cursor.execute(
-            f'''
+            """
             CREATE TABLE IF NOT EXISTS usuarios (
-                id {usuarios_pk},
+                id INT AUTO_INCREMENT PRIMARY KEY,
                 username VARCHAR(191) UNIQUE,
-                password TEXT,
-                role TEXT
+                password VARCHAR(255),
+                role VARCHAR(50)
             )
-            '''
+            """
         )
     else:
         cursor.execute(
@@ -363,40 +387,80 @@ def init_db():
         )
 
     ordens_pk = _auto_increment_pk()
-    cursor.execute(
-        f'''
-        CREATE TABLE IF NOT EXISTS ordens (
-            id {ordens_pk},
-            cliente TEXT NOT NULL,
-            telefone TEXT NOT NULL,
-            aparelho TEXT NOT NULL,
-            defeito TEXT NOT NULL,
-            valor REAL NOT NULL,
-            status TEXT NOT NULL,
-            imagem TEXT,
-            data_criacao TEXT NOT NULL
+    if IS_MYSQL:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ordens (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                cliente TEXT NOT NULL,
+                telefone TEXT NOT NULL,
+                aparelho TEXT NOT NULL,
+                defeito TEXT NOT NULL,
+                valor DECIMAL(10,2) NOT NULL,
+                status VARCHAR(100) NOT NULL,
+                imagem TEXT,
+                data_criacao DATETIME NOT NULL,
+                nome_cliente TEXT,
+                fornecedor TEXT,
+                custo_peca DECIMAL(10,2) DEFAULT 0
+            )
+            """
         )
-        '''
-    )
-    _ensure_column(cursor, 'ordens', 'nome_cliente', 'TEXT', None)
-    _ensure_column(cursor, 'ordens', 'fornecedor', 'TEXT', None)
-    _ensure_column(cursor, 'ordens', 'custo_peca', 'REAL DEFAULT 0', 0)
+    else:
+        cursor.execute(
+            f'''
+            CREATE TABLE IF NOT EXISTS ordens (
+                id {ordens_pk},
+                cliente TEXT NOT NULL,
+                telefone TEXT NOT NULL,
+                aparelho TEXT NOT NULL,
+                defeito TEXT NOT NULL,
+                valor REAL NOT NULL,
+                status TEXT NOT NULL,
+                imagem TEXT,
+                data_criacao TEXT NOT NULL,
+                nome_cliente TEXT,
+                fornecedor TEXT,
+                custo_peca REAL DEFAULT 0
+            )
+            '''
+        )
+
+    _ensure_column(cursor, 'ordens', 'nome_cliente', 'VARCHAR(255)' if IS_MYSQL else 'TEXT', None)
+    _ensure_column(cursor, 'ordens', 'fornecedor', 'VARCHAR(255)' if IS_MYSQL else 'TEXT', None)
+    _ensure_column(cursor, 'ordens', 'custo_peca', 'DECIMAL(10,2) DEFAULT 0' if IS_MYSQL else 'REAL DEFAULT 0', 0)
 
     acessorios_pk = _auto_increment_pk()
-    cursor.execute(
-        f'''
-        CREATE TABLE IF NOT EXISTS acessorios (
-            id {acessorios_pk},
-            nome TEXT NOT NULL,
-            quantidade INTEGER NOT NULL,
-            preco_unitario REAL NOT NULL,
-            receita_total REAL NOT NULL,
-            data_venda TEXT NOT NULL,
-            cliente TEXT NOT NULL,
-            imagem TEXT
+    if IS_MYSQL:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS acessorios (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                nome TEXT NOT NULL,
+                quantidade INT NOT NULL,
+                preco_unitario DECIMAL(10,2) NOT NULL,
+                receita_total DECIMAL(10,2) NOT NULL,
+                data_venda DATETIME NOT NULL,
+                cliente TEXT NOT NULL,
+                imagem TEXT
+            )
+            """
         )
-        '''
-    )
+    else:
+        cursor.execute(
+            f'''
+            CREATE TABLE IF NOT EXISTS acessorios (
+                id {acessorios_pk},
+                nome TEXT NOT NULL,
+                quantidade INTEGER NOT NULL,
+                preco_unitario REAL NOT NULL,
+                receita_total REAL NOT NULL,
+                data_venda TEXT NOT NULL,
+                cliente TEXT NOT NULL,
+                imagem TEXT
+            )
+            '''
+        )
     _ensure_column(cursor, 'acessorios', 'imagem', 'TEXT', None)
 
     _insert_default_users(cursor)
