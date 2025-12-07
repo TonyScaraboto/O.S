@@ -58,6 +58,16 @@ CREATE TABLE IF NOT EXISTS acessorios (
     imagem TEXT
 );
 
+CREATE TABLE IF NOT EXISTS pdfs_gerados (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ordem_id INT NOT NULL,
+    pdf_data LONGBLOB NOT NULL,
+    nome_arquivo VARCHAR(255) NOT NULL,
+    data_geracao DATETIME NOT NULL,
+    hash_conteudo VARCHAR(64),
+    UNIQUE KEY unique_ordem (ordem_id)
+);
+
 INSERT IGNORE INTO clientes (
     nome_assistencia, nome_usuario, email, senha, senha_pura, data_cadastro,
     trial_ativo, assinatura_ativa, pix_pagamento

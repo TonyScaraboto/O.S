@@ -461,6 +461,36 @@ def init_db():
         )
     _ensure_column(cursor, 'acessorios', 'imagem', 'TEXT', None)
 
+    # Tabela para armazenar PDFs gerados
+    pdfs_pk = _auto_increment_pk()
+    if IS_MYSQL:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pdfs_gerados (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                ordem_id INT NOT NULL,
+                pdf_data LONGBLOB NOT NULL,
+                nome_arquivo VARCHAR(255) NOT NULL,
+                data_geracao DATETIME NOT NULL,
+                hash_conteudo VARCHAR(64),
+                UNIQUE KEY unique_ordem (ordem_id)
+            )
+            """
+        )
+    else:
+        cursor.execute(
+            f'''
+            CREATE TABLE IF NOT EXISTS pdfs_gerados (
+                id {pdfs_pk},
+                ordem_id INTEGER NOT NULL UNIQUE,
+                pdf_data BLOB NOT NULL,
+                nome_arquivo TEXT NOT NULL,
+                data_geracao TEXT NOT NULL,
+                hash_conteudo TEXT
+            )
+            '''
+        )
+
     _insert_default_users(cursor)
     conn.commit()
     conn.close()

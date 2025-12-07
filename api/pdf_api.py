@@ -1,7 +1,8 @@
 import io
 import os
+import hashlib
 import requests
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash, send_file, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, send_file, current_app, Response
 from models.database import get_connection
 from datetime import datetime
 from utils.pdf_utils import build_pdf_image_src
@@ -14,8 +15,84 @@ pdf_api_bp = Blueprint('pdf_api', __name__)
 PDFSHIFT_URL = os.environ.get('PDFSHIFT_URL', 'https://api.pdfshift.io/v3/convert/pdf')
 PDFSHIFT_API_KEY = os.environ.get('PDFSHIFT_API_KEY')
 
+
+def _salvar_pdf_no_banco(ordem_id: int, pdf_bytes: bytes, nome_arquivo: str):
+    """Salva ou atualiza o PDF no banco de dados."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    hash_conteudo = hashlib.sha256(pdf_bytes).hexdigest()
+    data_geracao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Verificar se já existe
+    cursor.execute('SELECT id FROM pdfs_gerados WHERE ordem_id=?', (ordem_id,))
+    existe = cursor.fetchone()
+    
+    if existe:
+        cursor.execute(
+            'UPDATE pdfs_gerados SET pdf_data=?, nome_arquivo=?, data_geracao=?, hash_conteudo=? WHERE ordem_id=?',
+            (pdf_bytes, nome_arquivo, data_geracao, hash_conteudo, ordem_id)
+        )
+    else:
+        cursor.execute(
+            'INSERT INTO pdfs_gerados (ordem_id, pdf_data, nome_arquivo, data_geracao, hash_conteudo) VALUES (?, ?, ?, ?, ?)',
+            (ordem_id, pdf_bytes, nome_arquivo, data_geracao, hash_conteudo)
+        )
+    conn.commit()
+    conn.close()
+
+
+def _buscar_pdf_do_banco(ordem_id: int):
+    """Busca PDF armazenado no banco. Retorna (pdf_bytes, nome_arquivo) ou (None, None)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT pdf_data, nome_arquivo FROM pdfs_gerados WHERE ordem_id=?', (ordem_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return row[0], row[1]
+    return None, None
+
+@pdf_api_bp.route('/ver_pdf/<int:id>')
+def ver_pdf(id):
+    """Exibe o PDF armazenado no banco em uma nova aba (inline)."""
+    if 'user' not in session:
+        return redirect(url_for('auth.login'))
+
+    user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
+    is_admin = session.get('role') == 'admin'
+
+    # Verificar permissão
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
+    ordem = cursor.fetchone()
+    conn.close()
+
+    if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
+        return "Ordem não encontrada.", 404
+
+    # Buscar PDF do banco
+    pdf_bytes, nome_arquivo = _buscar_pdf_do_banco(id)
+    
+    if not pdf_bytes:
+        # PDF não existe, gerar agora
+        return redirect(url_for('pdf_api.gerar_pdf_api', id=id, view='1'))
+
+    # Retornar PDF inline (abre no navegador)
+    return Response(
+        pdf_bytes,
+        mimetype='application/pdf',
+        headers={
+            'Content-Disposition': f'inline; filename="{nome_arquivo}"',
+            'Content-Type': 'application/pdf'
+        }
+    )
+
+
 @pdf_api_bp.route('/pdf_ordem_api/<int:id>')
 def gerar_pdf_api(id):
+    """Gera o PDF, salva no banco e exibe inline ou faz download."""
     if 'user' not in session:
         return redirect(url_for('auth.login'))
 
@@ -41,6 +118,34 @@ def gerar_pdf_api(id):
     if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
         return "Ordem não encontrada.", 404
 
+    ordem_id = ordem[0]
+    nome_arquivo = f'ordem_{ordem_id}.pdf'
+    
+    # Verificar se deve apenas visualizar (view=1) ou forçar regeneração (force=1)
+    view_mode = request.args.get('view', '0') == '1'
+    force_regen = request.args.get('force', '0') == '1'
+    
+    # Se não forçar regeneração, tentar buscar do banco primeiro
+    if not force_regen:
+        pdf_bytes_cached, _ = _buscar_pdf_do_banco(ordem_id)
+        if pdf_bytes_cached:
+            if view_mode:
+                return Response(
+                    pdf_bytes_cached,
+                    mimetype='application/pdf',
+                    headers={
+                        'Content-Disposition': f'inline; filename="{nome_arquivo}"',
+                        'Content-Type': 'application/pdf'
+                    }
+                )
+            else:
+                return send_file(
+                    io.BytesIO(pdf_bytes_cached),
+                    mimetype='application/pdf',
+                    as_attachment=True,
+                    download_name=nome_arquivo
+                )
+
     foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
     pdf_context = build_pdf_context(ordem)
 
@@ -53,71 +158,84 @@ def gerar_pdf_api(id):
     else:
         source = html
 
+    pdf_bytes = None
+    erro_pdf = None
+
     # Fallback local com WeasyPrint quando sem chave ou forçado via query (?engine=weasy)
     engine = request.args.get('engine', '').lower()
     use_weasy = engine == 'weasy' or (not os.environ.get('PDFSHIFT_API_KEY', PDFSHIFT_API_KEY) and current_app.debug)
     use_pdfkit = engine == 'pdfkit'
+    
     if use_weasy:
         try:
             from weasyprint import HTML
             pdf_bytes = HTML(string=html, base_url=current_app.root_path).write_pdf()
-            return send_file(
-                io.BytesIO(pdf_bytes),
-                mimetype='application/pdf',
-                as_attachment=True,
-                download_name=f'ordem_{id}.pdf'
-            )
         except Exception as e:
             current_app.logger.exception('Falha na geração local com WeasyPrint: %s', e)
-            flash(f'Falha na geração local de PDF: {e}', 'danger')
-            return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf=str(e))
+            erro_pdf = str(e)
 
-    if use_pdfkit:
+    elif use_pdfkit:
         try:
             pdf_bytes = render_pdf_bytes_from_html(html)
-            return send_file(
-                io.BytesIO(pdf_bytes),
-                mimetype='application/pdf',
-                as_attachment=True,
-                download_name=f'ordem_{id}.pdf'
-            )
         except Exception as e:
             current_app.logger.exception('Falha na geração com pdfkit/wkhtmltopdf: %s', e)
-            flash(f'Falha com pdfkit: {e}', 'danger')
-            return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf=str(e))
+            erro_pdf = str(e)
 
-    api_key = os.environ.get('PDFSHIFT_API_KEY', PDFSHIFT_API_KEY)
-    if not api_key:
-        flash('API PDFShift não configurada.', 'danger')
-        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf='Configuração ausente')
+    else:
+        api_key = os.environ.get('PDFSHIFT_API_KEY', PDFSHIFT_API_KEY)
+        if not api_key:
+            erro_pdf = 'API PDFShift não configurada.'
+        else:
+            try:
+                payload = {
+                    'source': source,
+                    'landscape': False,
+                    'use_print': True,
+                }
+                response = requests.post(
+                    PDFSHIFT_URL,
+                    headers={'X-API-Key': api_key},
+                    json=payload,
+                    timeout=60
+                )
+                response.raise_for_status()
+                pdf_bytes = response.content
+            except requests.HTTPError as e:
+                status = getattr(response, 'status_code', 'N/A')
+                text = getattr(response, 'text', str(e))
+                current_app.logger.error('PDFShift HTTPError %s: %s', status, text[:500])
+                erro_pdf = f"{status} - {text[:500]}"
+            except Exception as e:
+                current_app.logger.exception('Falha na comunicação com a API PDFShift: %s', e)
+                erro_pdf = str(e)
 
+    # Se houve erro, mostrar página de erro
+    if erro_pdf:
+        flash(f'Erro ao gerar PDF: {erro_pdf}', 'danger')
+        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf=erro_pdf)
+
+    # Salvar PDF no banco
     try:
-        payload = {
-            'source': source,
-            'landscape': False,
-            'use_print': True,
-        }
-        response = requests.post(
-            PDFSHIFT_URL,
-            headers={'X-API-Key': api_key},
-            json=payload,
-            timeout=60
+        _salvar_pdf_no_banco(ordem_id, pdf_bytes, nome_arquivo)
+    except Exception as e:
+        current_app.logger.warning('Não foi possível salvar PDF no banco: %s', e)
+
+    # Retornar PDF
+    if view_mode:
+        # Exibir inline (nova aba do navegador)
+        return Response(
+            pdf_bytes,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'inline; filename="{nome_arquivo}"',
+                'Content-Type': 'application/pdf'
+            }
         )
-        response.raise_for_status()
-        pdf_bytes = response.content
+    else:
+        # Download
         return send_file(
             io.BytesIO(pdf_bytes),
             mimetype='application/pdf',
             as_attachment=True,
-            download_name=f'ordem_{id}.pdf'
+            download_name=nome_arquivo
         )
-    except requests.HTTPError as e:
-        status = getattr(response, 'status_code', 'N/A')
-        text = getattr(response, 'text', str(e))
-        current_app.logger.error('PDFShift HTTPError %s: %s', status, text[:500])
-        flash(f"Erro ao gerar PDF: {status} - {text[:500]}", "danger")
-        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf=text)
-    except Exception as e:
-        current_app.logger.exception('Falha na comunicação com a API PDFShift: %s', e)
-        flash(f"Falha na comunicação com a API PDFShift: {str(e)}", "danger")
-        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf=str(e))
