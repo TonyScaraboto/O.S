@@ -81,15 +81,15 @@
                     {% endif %}
                 </td>
                 <td>{{ ordem[8] }}</td>
-                <td class="d-flex gap-1">
-                    <a href="/ver_pdf/{{ ordem[0] }}" class="btn btn-sm btn-outline-dark" target="_blank">
-                        <i class="bi bi-file-earmark-pdf"></i> Ver PDF
+                <td class="d-flex gap-1 flex-wrap">
+                    <a href="/pdf_ordem_api/{{ ordem[0] }}?view=1" class="btn btn-sm btn-outline-dark" target="_blank" title="Ver PDF no navegador">
+                        <i class="bi bi-file-earmark-pdf"></i> Ver
                     </a>
-                    <a href="/pdf_ordem_api/{{ ordem[0] }}" class="btn btn-sm btn-success" target="_blank">
-                        <i class="bi bi-download"></i> Baixar PDF
+                    <a href="/pdf_ordem_api/{{ ordem[0] }}" class="btn btn-sm btn-success" target="_blank" title="Baixar PDF">
+                        <i class="bi bi-download"></i> Baixar
                     </a>
-                    <a href="/pdf_ordem_api/{{ ordem[0] }}?view=1&force=1" class="btn btn-sm btn-primary" target="_blank">
-                        <i class="bi bi-arrow-repeat"></i> Regerar PDF
+                    <a href="/pdf_html/{{ ordem[0] }}" class="btn btn-sm btn-secondary" target="_blank" title="Ver HTML para impressão">
+                        <i class="bi bi-printer"></i> Imprimir
                     </a>
                     <form action="{{ url_for('ordens.excluir_os', id=ordem[0]) }}" method="post"
                         onsubmit="return confirm('Tem certeza que deseja excluir esta O.S?');" style="display:inline;">
