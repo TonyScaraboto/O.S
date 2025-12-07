@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from models.database import get_connection
 from datetime import datetime
 from utils.pdf_utils import build_pdf_image_src
+from utils.pdfkit_utils import render_pdf_bytes_from_html
 from utils.ordem_utils import build_pdf_context
 from routes.ordens import _normalize_email, _usuario_pode_ver_ordem
 
@@ -55,6 +56,7 @@ def gerar_pdf_api(id):
     # Fallback local com WeasyPrint quando sem chave ou forçado via query (?engine=weasy)
     engine = request.args.get('engine', '').lower()
     use_weasy = engine == 'weasy' or (not os.environ.get('PDFSHIFT_API_KEY', PDFSHIFT_API_KEY) and current_app.debug)
+    use_pdfkit = engine == 'pdfkit'
     if use_weasy:
         try:
             from weasyprint import HTML
@@ -68,6 +70,20 @@ def gerar_pdf_api(id):
         except Exception as e:
             current_app.logger.exception('Falha na geração local com WeasyPrint: %s', e)
             flash(f'Falha na geração local de PDF: {e}', 'danger')
+            return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf=str(e))
+
+    if use_pdfkit:
+        try:
+            pdf_bytes = render_pdf_bytes_from_html(html)
+            return send_file(
+                io.BytesIO(pdf_bytes),
+                mimetype='application/pdf',
+                as_attachment=True,
+                download_name=f'ordem_{id}.pdf'
+            )
+        except Exception as e:
+            current_app.logger.exception('Falha na geração com pdfkit/wkhtmltopdf: %s', e)
+            flash(f'Falha com pdfkit: {e}', 'danger')
             return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf=str(e))
 
     api_key = os.environ.get('PDFSHIFT_API_KEY', PDFSHIFT_API_KEY)
