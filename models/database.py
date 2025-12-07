@@ -154,12 +154,10 @@ def _sqlite_path_from_url():
 
 
 def get_connection():
-    # Em ambientes serverless (Vercel/Railway/etc), não permitir SQLite (nem via DATABASE_URL=sqlite://)
-    if SERVERLESS_ENV:
-        if IS_SQLITE_URL or not DATABASE_URL:
-            raise RuntimeError(
-                'SQLite não é suportado em ambiente serverless. Configure DATABASE_URL para Postgres ou MySQL.'
-            )
+    # Em ambientes serverless (Vercel/Railway/etc), preferimos banco externo, mas se não estiver configurado
+    # seguimos com SQLite para evitar que a aplicação derrube logo na importação. Dados serão efêmeros.
+    if SERVERLESS_ENV and (IS_SQLITE_URL or not DATABASE_URL):
+        print('AVISO: usando SQLite em ambiente serverless; configure DATABASE_URL para persistência real.')
     if IS_POSTGRES:
         return PostgresConnection()
     if IS_MYSQL:
