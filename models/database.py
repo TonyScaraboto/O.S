@@ -2,91 +2,9 @@ import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import parse_qs, quote_plus, unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
-
-def _first_env(*candidates):
-    for name in candidates:
-        value = os.environ.get(name)
-        if value:
-            return value.strip()
-    return ''
-
-
-def _should_rebuild_url(raw_url: str) -> bool:
-    if not raw_url:
-        return True
-    try:
-        parsed = urlparse(raw_url)
-    except Exception:
-        return True
-    hostname = (parsed.hostname or '').lower()
-    if parsed.scheme.startswith('mysql') and hostname in ('', 'host', 'hostname'):
-        return True
-    if parsed.scheme.startswith('mysql') and hostname in ('localhost', '127.0.0.1') and os.environ.get('VERCEL_ENV'):
-        return True
-    return False
-
-
-def _build_url_from_components() -> str:
-    driver = _first_env('DB_DRIVER', 'DATABASE_DRIVER') or 'mysql+mysqlconnector'
-    if '+' not in driver:
-        # assume mysql driver if shorthand provided
-        driver = f"{driver}+mysqlconnector" if driver == 'mysql' else driver
-
-    host = _first_env('MYSQLHOST', 'MYSQL_HOST', 'DB_HOST', 'DATABASE_HOST', 'PLANETSCALE_HOST', 'PSCALE_HOST')
-    user = _first_env('MYSQLUSER', 'MYSQL_USER', 'DB_USER', 'DATABASE_USER', 'PLANETSCALE_USERNAME', 'PSCALE_USERNAME')
-    password = _first_env('MYSQLPASSWORD', 'MYSQL_PASSWORD', 'DB_PASSWORD', 'DATABASE_PASSWORD', 'PLANETSCALE_PASSWORD', 'PSCALE_PASSWORD')
-    database = _first_env('MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_NAME', 'DATABASE_NAME', 'PLANETSCALE_DATABASE', 'PSCALE_DATABASE')
-    port = _first_env('MYSQLPORT', 'MYSQL_PORT', 'DB_PORT', 'DATABASE_PORT', 'PLANETSCALE_PORT', 'PSCALE_PORT') or '3306'
-
-    if not (host and user and database):
-        return ''
-
-    auth_part = quote_plus(user)
-    if password:
-        auth_part += f":{quote_plus(password)}"
-    netloc = f"{auth_part}@{host}:{port}"
-    return f"{driver}://{netloc}/{database}"
-
-
-def _resolve_database_url() -> str:
-    raw_url = os.environ.get('DATABASE_URL', '').strip()
-    if not _should_rebuild_url(raw_url):
-        return raw_url
-
-    # Vercel/PlanetScale and similar providers expose CLEARDB/JAWS style URLs
-    alternative_url = _first_env(
-        'CLEARDB_DATABASE_URL',
-        'JAWSDB_URL',
-        'JAWSDB_MARIA_URL',
-        'JAWSDB_ADMIN_URL',
-        'MYSQL_URL',
-        'MYSQL_URI',
-        'JAWSDB_URL_JAWSDB',
-        'DATABASE_URL_FILE'
-    )
-    if alternative_url:
-        if os.path.isfile(alternative_url):
-            try:
-                with open(alternative_url, 'r', encoding='utf-8') as fh:
-                    alternative_url = fh.read().strip()
-            except OSError:
-                alternative_url = ''
-        if alternative_url and not _should_rebuild_url(alternative_url):
-            os.environ['DATABASE_URL'] = alternative_url
-            return alternative_url
-
-    built = _build_url_from_components()
-    if built:
-        os.environ['DATABASE_URL'] = built
-        return built
-
-    # fallback to raw even if invalid so existing behaviour remains (will raise later if needed)
-    return raw_url
-
-
-DATABASE_URL = _resolve_database_url()
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
 PARSED_DB_URL = urlparse(DATABASE_URL) if DATABASE_URL else None
 
 
