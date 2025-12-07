@@ -15,6 +15,25 @@ PDFSHIFT_URL = os.environ.get('PDFSHIFT_URL', 'https://api.pdfshift.io/v3/conver
 PDFSHIFT_API_KEY = os.environ.get('PDFSHIFT_API_KEY')
 
 
+def _buscar_ordem(cursor, ordem_id, user_email_norm, is_admin):
+    """Busca uma ordem pelo ID ou a última ordem do usuário."""
+    cursor.execute('SELECT * FROM ordens WHERE id=?', (ordem_id,))
+    ordem = cursor.fetchone()
+    
+    # Fallback: buscar última ordem se não encontrou pelo ID
+    if not ordem:
+        try:
+            if is_admin:
+                cursor.execute('SELECT * FROM ordens ORDER BY id DESC LIMIT 1')
+            else:
+                cursor.execute('SELECT * FROM ordens WHERE LOWER(cliente)=? ORDER BY id DESC LIMIT 1', (user_email_norm,))
+            ordem = cursor.fetchone()
+        except Exception:
+            ordem = None
+    
+    return ordem
+
+
 def _get_pdfkit_renderer():
     """Tenta importar pdfkit_utils. Retorna None se não disponível."""
     try:
@@ -32,7 +51,6 @@ def _salvar_pdf_no_banco(ordem_id: int, pdf_bytes: bytes, nome_arquivo: str):
         hash_conteudo = hashlib.sha256(pdf_bytes).hexdigest()
         data_geracao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        # Verificar se já existe
         cursor.execute('SELECT id FROM pdfs_gerados WHERE ordem_id=?', (ordem_id,))
         existe = cursor.fetchone()
         
@@ -69,31 +87,12 @@ def _buscar_pdf_do_banco(ordem_id: int):
     return None, None
 
 
-def _gerar_pdf_bytes(html: str, engine: str = None):
+def _gerar_pdf_bytes(html: str):
     """
     Tenta gerar PDF usando diferentes engines.
     Retorna (pdf_bytes, erro) - se erro, pdf_bytes é None.
     """
-    # Se engine específico solicitado
-    if engine == 'weasy':
-        try:
-            from weasyprint import HTML
-            pdf_bytes = HTML(string=html, base_url=current_app.root_path).write_pdf()
-            return pdf_bytes, None
-        except Exception as e:
-            return None, f'WeasyPrint: {e}'
-    
-    if engine == 'pdfkit':
-        render_fn = _get_pdfkit_renderer()
-        if render_fn:
-            try:
-                pdf_bytes = render_fn(html)
-                return pdf_bytes, None
-            except Exception as e:
-                return None, f'pdfkit: {e}'
-        return None, 'pdfkit não disponível'
-    
-    # Tentar PDFShift API
+    # 1. Tentar PDFShift API (funciona em serverless)
     api_key = os.environ.get('PDFSHIFT_API_KEY', PDFSHIFT_API_KEY)
     if api_key:
         try:
@@ -110,16 +109,10 @@ def _gerar_pdf_bytes(html: str, engine: str = None):
             )
             response.raise_for_status()
             return response.content, None
-        except requests.HTTPError as e:
-            status = getattr(response, 'status_code', 'N/A')
-            text = getattr(response, 'text', str(e))
-            current_app.logger.error('PDFShift HTTPError %s: %s', status, text[:500])
-            # Continuar para fallbacks
         except Exception as e:
             current_app.logger.warning('PDFShift falhou: %s', e)
-            # Continuar para fallbacks
     
-    # Fallback: tentar WeasyPrint
+    # 2. Tentar WeasyPrint (local)
     try:
         from weasyprint import HTML
         pdf_bytes = HTML(string=html, base_url=current_app.root_path).write_pdf()
@@ -127,61 +120,47 @@ def _gerar_pdf_bytes(html: str, engine: str = None):
     except ImportError:
         pass
     except Exception as e:
-        current_app.logger.warning('WeasyPrint fallback falhou: %s', e)
+        current_app.logger.warning('WeasyPrint falhou: %s', e)
     
-    # Fallback: tentar pdfkit
+    # 3. Tentar pdfkit (local)
     render_fn = _get_pdfkit_renderer()
     if render_fn:
         try:
             pdf_bytes = render_fn(html)
             return pdf_bytes, None
         except Exception as e:
-            current_app.logger.warning('pdfkit fallback falhou: %s', e)
+            current_app.logger.warning('pdfkit falhou: %s', e)
     
-    # Nenhum engine disponível
-    return None, 'Nenhum gerador de PDF disponível. Configure PDFSHIFT_API_KEY ou instale WeasyPrint/pdfkit.'
+    # Nenhum disponível
+    return None, 'Nenhum gerador de PDF disponível. Use a opção Imprimir (Ctrl+P) para salvar como PDF.'
 
-@pdf_api_bp.route('/ver_pdf/<int:id>')
-def ver_pdf(id):
-    """Exibe o PDF armazenado no banco em uma nova aba (inline)."""
-    if 'user' not in session:
-        return redirect(url_for('auth.login'))
 
-    user_email = session.get('user')
-    user_email_norm = _normalize_email(user_email)
-    is_admin = session.get('role') == 'admin'
-
-    # Verificar permissão
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
-    ordem = cursor.fetchone()
-    conn.close()
-
-    if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
-        return "Ordem não encontrada.", 404
-
-    # Buscar PDF do banco
-    pdf_bytes, nome_arquivo = _buscar_pdf_do_banco(id)
+def _render_ordem_html(ordem, foto_nome=None, pdf_context=None, erro_pdf=None, auto_print=False):
+    """Renderiza o HTML da ordem de serviço."""
+    if not pdf_context:
+        pdf_context = build_pdf_context(ordem) if ordem else {}
+    if foto_nome is None and ordem and len(ordem) > 7:
+        foto_nome = build_pdf_image_src(ordem[7])
     
-    if not pdf_bytes:
-        # PDF não existe, gerar agora
-        return redirect(url_for('pdf_api.gerar_pdf_api', id=id, view='1'))
-
-    # Retornar PDF inline (abre no navegador)
-    return Response(
-        pdf_bytes,
-        mimetype='application/pdf',
-        headers={
-            'Content-Disposition': f'inline; filename="{nome_arquivo}"',
-            'Content-Type': 'application/pdf'
-        }
+    return render_template(
+        'pdf_ordem.html',
+        ordem=ordem,
+        foto_nome=foto_nome,
+        now=datetime.now(),
+        pdf_context=pdf_context,
+        erro_pdf=erro_pdf,
+        auto_print=auto_print
     )
 
 
 @pdf_api_bp.route('/pdf_ordem_api/<int:id>')
 def gerar_pdf_api(id):
-    """Gera o PDF, salva no banco e exibe inline ou faz download."""
+    """
+    Gera/exibe o PDF da ordem.
+    - Sem parâmetros: tenta gerar PDF binário para download
+    - ?view=1: tenta exibir PDF inline no navegador
+    - Se não conseguir gerar PDF, mostra HTML para impressão
+    """
     if 'user' not in session:
         return redirect(url_for('auth.login'))
 
@@ -190,18 +169,8 @@ def gerar_pdf_api(id):
     user_email = session.get('user')
     user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
-    cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
-    ordem = cursor.fetchone()
-    # Fallback: buscar última ordem do usuário se id não encontrado
-    if not ordem:
-        try:
-            if is_admin:
-                cursor.execute('SELECT * FROM ordens ORDER BY id DESC LIMIT 1')
-            else:
-                cursor.execute('SELECT * FROM ordens WHERE LOWER(cliente)=? ORDER BY id DESC LIMIT 1', (user_email_norm,))
-            ordem = cursor.fetchone()
-        except Exception:
-            ordem = None
+    
+    ordem = _buscar_ordem(cursor, id, user_email_norm, is_admin)
     conn.close()
 
     if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
@@ -209,12 +178,10 @@ def gerar_pdf_api(id):
 
     ordem_id = ordem[0]
     nome_arquivo = f'ordem_{ordem_id}.pdf'
-    
-    # Verificar se deve apenas visualizar (view=1) ou forçar regeneração (force=1)
     view_mode = request.args.get('view', '0') == '1'
     force_regen = request.args.get('force', '0') == '1'
     
-    # Se não forçar regeneração, tentar buscar do banco primeiro
+    # Tentar buscar PDF do cache primeiro
     if not force_regen:
         pdf_bytes_cached, _ = _buscar_pdf_do_banco(ordem_id)
         if pdf_bytes_cached:
@@ -235,28 +202,52 @@ def gerar_pdf_api(id):
                     download_name=nome_arquivo
                 )
 
+    # Preparar contexto
     foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
     pdf_context = build_pdf_context(ordem)
-
+    
+    # Renderizar HTML
     html = render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context)
 
-    # Usar engine específico se solicitado via query string
-    engine = request.args.get('engine', '').lower() or None
+    # Tentar gerar PDF binário
+    pdf_bytes, erro = _gerar_pdf_bytes(html)
     
-    # Gerar PDF usando a função robusta
-    pdf_bytes, erro_pdf = _gerar_pdf_bytes(html, engine=engine)
+    if pdf_bytes:
+        # Salvar no cache
+        _salvar_pdf_no_banco(ordem_id, pdf_bytes, nome_arquivo)
+        
+        if view_mode:
+            return Response(
+                pdf_bytes,
+                mimetype='application/pdf',
+                headers={
+                    'Content-Disposition': f'inline; filename="{nome_arquivo}"',
+                    'Content-Type': 'application/pdf'
+                }
+            )
+        else:
+            return send_file(
+                io.BytesIO(pdf_bytes),
+                mimetype='application/pdf',
+                as_attachment=True,
+                download_name=nome_arquivo
+            )
+    
+    # Fallback: mostrar HTML para impressão manual
+    flash('PDF não disponível. Use Ctrl+P (ou Cmd+P no Mac) para imprimir/salvar como PDF.', 'info')
+    return _render_ordem_html(ordem, foto_nome, pdf_context, erro_pdf=erro)
 
-    # Se houve erro, mostrar página HTML para impressão manual
-    if erro_pdf or not pdf_bytes:
-        flash(f'Erro ao gerar PDF: {erro_pdf or "PDF vazio"}. Use Ctrl+P para imprimir esta página.', 'warning')
-        return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context, erro_pdf=erro_pdf)
 
-    # Salvar PDF no banco
-    _salvar_pdf_no_banco(ordem_id, pdf_bytes, nome_arquivo)
+@pdf_api_bp.route('/ver_pdf/<int:id>')
+def ver_pdf(id):
+    """Exibe o PDF no navegador ou redireciona para geração."""
+    if 'user' not in session:
+        return redirect(url_for('auth.login'))
 
-    # Retornar PDF
-    if view_mode:
-        # Exibir inline (nova aba do navegador)
+    # Tentar buscar PDF do cache
+    pdf_bytes, nome_arquivo = _buscar_pdf_do_banco(id)
+    
+    if pdf_bytes:
         return Response(
             pdf_bytes,
             mimetype='application/pdf',
@@ -265,19 +256,14 @@ def gerar_pdf_api(id):
                 'Content-Type': 'application/pdf'
             }
         )
-    else:
-        # Download
-        return send_file(
-            io.BytesIO(pdf_bytes),
-            mimetype='application/pdf',
-            as_attachment=True,
-            download_name=nome_arquivo
-        )
+    
+    # Redirecionar para gerar
+    return redirect(url_for('pdf_api.gerar_pdf_api', id=id, view='1'))
 
 
 @pdf_api_bp.route('/pdf_html/<int:id>')
 def ver_pdf_html(id):
-    """Exibe a O.S em formato HTML para impressão (fallback quando PDF não disponível)."""
+    """Exibe a O.S em formato HTML para impressão (sempre funciona)."""
     if 'user' not in session:
         return redirect(url_for('auth.login'))
 
@@ -286,8 +272,8 @@ def ver_pdf_html(id):
     user_email = session.get('user')
     user_email_norm = _normalize_email(user_email)
     is_admin = session.get('role') == 'admin'
-    cursor.execute('SELECT * FROM ordens WHERE id=?', (id,))
-    ordem = cursor.fetchone()
+    
+    ordem = _buscar_ordem(cursor, id, user_email_norm, is_admin)
     conn.close()
 
     if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
@@ -296,4 +282,28 @@ def ver_pdf_html(id):
     foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
     pdf_context = build_pdf_context(ordem)
 
-    return render_template('pdf_ordem.html', ordem=ordem, foto_nome=foto_nome, now=datetime.now(), pdf_context=pdf_context)
+    return _render_ordem_html(ordem, foto_nome, pdf_context)
+
+
+@pdf_api_bp.route('/imprimir/<int:id>')
+def imprimir_ordem(id):
+    """Exibe a O.S e abre diálogo de impressão automaticamente."""
+    if 'user' not in session:
+        return redirect(url_for('auth.login'))
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    user_email = session.get('user')
+    user_email_norm = _normalize_email(user_email)
+    is_admin = session.get('role') == 'admin'
+    
+    ordem = _buscar_ordem(cursor, id, user_email_norm, is_admin)
+    conn.close()
+
+    if not ordem or not _usuario_pode_ver_ordem(ordem, user_email_norm, is_admin):
+        return "Ordem não encontrada.", 404
+
+    foto_nome = build_pdf_image_src(ordem[7] if len(ordem) > 7 else None)
+    pdf_context = build_pdf_context(ordem)
+
+    return _render_ordem_html(ordem, foto_nome, pdf_context, auto_print=True)

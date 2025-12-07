@@ -212,7 +212,7 @@
         <i class="bi bi-whatsapp"></i>
     </a>
 
-    {% if request and request.args.get('print') %}
+    {% if auto_print or (request and request.args.get('print')) %}
     <script>
         window.addEventListener('load', function () {
             setTimeout(function () { window.print(); }, 300);

@@ -82,14 +82,14 @@
                 </td>
                 <td>{{ ordem[8] }}</td>
                 <td class="d-flex gap-1 flex-wrap">
-                    <a href="/pdf_ordem_api/{{ ordem[0] }}?view=1" class="btn btn-sm btn-outline-dark" target="_blank" title="Ver PDF no navegador">
+                    <a href="/pdf_html/{{ ordem[0] }}" class="btn btn-sm btn-outline-dark" target="_blank" title="Ver O.S para impressão">
                         <i class="bi bi-file-earmark-pdf"></i> Ver
                     </a>
-                    <a href="/pdf_ordem_api/{{ ordem[0] }}" class="btn btn-sm btn-success" target="_blank" title="Baixar PDF">
-                        <i class="bi bi-download"></i> Baixar
-                    </a>
-                    <a href="/pdf_html/{{ ordem[0] }}" class="btn btn-sm btn-secondary" target="_blank" title="Ver HTML para impressão">
+                    <a href="/imprimir/{{ ordem[0] }}" class="btn btn-sm btn-primary" target="_blank" title="Imprimir O.S">
                         <i class="bi bi-printer"></i> Imprimir
+                    </a>
+                    <a href="/pdf_ordem_api/{{ ordem[0] }}" class="btn btn-sm btn-success" target="_blank" title="Baixar PDF (requer API)">
+                        <i class="bi bi-download"></i> PDF
                     </a>
                     <form action="{{ url_for('ordens.excluir_os', id=ordem[0]) }}" method="post"
                         onsubmit="return confirm('Tem certeza que deseja excluir esta O.S?');" style="display:inline;">
